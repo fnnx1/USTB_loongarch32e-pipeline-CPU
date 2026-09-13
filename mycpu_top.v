@@ -2,12 +2,14 @@ module mycpu_top(
     input  wire        clk,
     input  wire        resetn,
     // inst sram interface
-    output wire        inst_sram_we,
+    output wire [3:0]  inst_sram_we,
+    output wire        inst_sram_en,
     output wire [31:0] inst_sram_addr,
     output wire [31:0] inst_sram_wdata,
     input  wire [31:0] inst_sram_rdata,
     // data sram interface
-    output wire        data_sram_we,
+    output wire [3:0]  data_sram_we,
+    output wire        data_sram_en,
     output wire [31:0] data_sram_addr,
     output wire [31:0] data_sram_wdata,
     input  wire [31:0] data_sram_rdata,
@@ -111,6 +113,8 @@ wire [31:0] alu_src2   ;
 wire [31:0] alu_result ;
 
 wire [31:0] mem_result;
+wire [31:0] final_result;
+wire        rj_eq_rd;
 
 assign seq_pc       = pc + 3'h4;
 assign nextpc       = br_taken ? br_target : seq_pc;
@@ -124,7 +128,8 @@ always @(posedge clk) begin
     end
 end
 
-assign inst_sram_we    = 1'b0;
+assign inst_sram_en   = valid;
+assign inst_sram_we   = 4'b0000;
 assign inst_sram_addr  = pc;
 assign inst_sram_wdata = 32'b0;
 assign inst            = inst_sram_rdata;
@@ -250,12 +255,13 @@ assign alu_src2 = src2_is_imm ? imm : rkd_value;
 
 alu u_alu(
     .alu_op     (alu_op    ),
-    .alu_src1   (alu_src2  ),
+    .alu_src1   (alu_src1  ),
     .alu_src2   (alu_src2  ),
     .alu_result (alu_result)
     );
 
-assign data_sram_we    = mem_we && valid;
+assign data_sram_en    = (inst_ld_w || inst_st_w) && valid;
+assign data_sram_we    = {4{mem_we && valid}};
 assign data_sram_addr  = alu_result;
 assign data_sram_wdata = rkd_value;
 
@@ -268,7 +274,7 @@ assign rf_wdata = final_result;
 
 // debug info generate
 assign debug_wb_pc       = pc;
-assign debug_wb_rf_wen   = {4{rf_we}};
+assign debug_wb_rf_we    = {4{rf_we}};
 assign debug_wb_rf_wnum  = dest;
 assign debug_wb_rf_wdata = final_result;
 
