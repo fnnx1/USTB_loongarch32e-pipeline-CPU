@@ -2,11 +2,11 @@ module mycpu_top(
     input  wire        clk,
     input  wire        resetn,
     // inst sram interface
-    output wire [3:0]  inst_sram_we,
-    output wire        inst_sram_en,
-    output wire [31:0] inst_sram_addr,
-    output wire [31:0] inst_sram_wdata,
-    input  wire [31:0] inst_sram_rdata,
+    output wire [3:0]  inst_sram_we,    //指令内存对应字节访问使能
+    output wire        inst_sram_en,    // block Memory 使能
+    output wire [31:0] inst_sram_addr,  //访问地址
+    output wire [31:0] inst_sram_wdata, //写入数据
+    input  wire [31:0] inst_sram_rdata, //读数据
     // data sram interface
     output wire [3:0]  data_sram_we,
     output wire        data_sram_en,
@@ -14,10 +14,10 @@ module mycpu_top(
     output wire [31:0] data_sram_wdata,
     input  wire [31:0] data_sram_rdata,
     // trace debug interface
-    output wire [31:0] debug_wb_pc,
-    output wire [ 3:0] debug_wb_rf_we,
-    output wire [ 4:0] debug_wb_rf_wnum,
-    output wire [31:0] debug_wb_rf_wdata
+    output wire [31:0] debug_wb_pc,         //pc值
+    output wire [ 3:0] debug_wb_rf_we,      //写寄存器信号
+    output wire [ 4:0] debug_wb_rf_wnum,    //写入的寄存器号
+    output wire [31:0] debug_wb_rf_wdata    //写入数据
 );
 reg         reset;
 always @(posedge clk) reset <= ~resetn;
@@ -32,14 +32,14 @@ always @(posedge clk) begin
     end
 end
 
-wire [31:0] seq_pc;
-wire [31:0] nextpc;
-wire        br_taken;
-wire [31:0] br_target;
-wire [31:0] inst;
-reg  [31:0] pc;
+wire [31:0] seq_pc;         //预计的下一个pc
+wire [31:0] nextpc;         //真正的下个pc
+wire        br_taken;       //是否要跳转
+wire [31:0] br_target;      //跳转目标
+wire [31:0] inst;           //指令
+reg  [31:0] pc;             //pc
 
-wire [11:0] alu_op;
+wire [11:0] alu_op;         //
 wire        load_op;
 wire        src1_is_pc;
 wire        src2_is_imm;

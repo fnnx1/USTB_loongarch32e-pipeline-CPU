@@ -1,3 +1,4 @@
+// 单周期双输出的寄存器组
 module regfile(
     input  wire        clk,
     // READ PORT 1
