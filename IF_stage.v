@@ -3,7 +3,7 @@
 module IF_stage(
     input wire clk, //时钟
     input wire reset,   //复位
-    input wire ds_allowin,  //允许输入？
+    input wire ds_allowin,  //告知是否下个阶段可以接受数据输入
     input wire [`BR_BUS_WD -1 :0] br_bus, //
     output wire fs_to_ds_valid,
     output wire [`FS_TO_DS_BUS_WD-1 :0] fs_to_ds_bus,
@@ -42,7 +42,8 @@ assign next_pc = (br_taken == 1 ) ? br_target :seq_pc;
 
 //IF stage
 assign fs_ready_go = 1'b1; //可以传输
-assign fs_allowin = !fs_valid || fs_ready_go && ds_allowin; //允许进入，
+assign fs_allowin = !fs_valid || fs_ready_go && ds_allowin; 
+//允许进入，需要了解下一级是否可以进入目的是可以实现保持停顿
 assign fs_to_ds_valid = fs_valid && fs_ready_go;
 
 always@(posedge clk)begin
