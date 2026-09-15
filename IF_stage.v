@@ -4,11 +4,11 @@ module IF_stage(
     input wire clk, //时钟
     input wire reset,   //复位
     input wire ds_allowin,  //告知是否下个阶段可以接受数据输入
-    input wire [`BR_BUS_WD -1 :0] br_bus, //
-    output wire fs_to_ds_valid,
-    output wire [`FS_TO_DS_BUS_WD-1 :0] fs_to_ds_bus,
+    input wire [`BR_BUS_WD -1 :0] br_bus, //跳转信号
+    output wire fs_to_ds_valid,     //告知下个阶段数据是否有效
+    output wire [`FS_TO_DS_BUS_WD-1 :0] fs_to_ds_bus,   //传递给下一级的缓冲区
     // inst sram interface
-    output wire inst_sram_en,   //
+    output wire inst_sram_en,
     output wire [3:0] inst_sram_we,
     output wire [31:0] inst_sram_addr,
     output wire [31:0] inst_sram_wdata,

@@ -4,18 +4,18 @@ module ID_stage(
     input  wire        clk,
     input  wire        reset,
     //allowin
-    input  wire        es_allowin,  //允许输入
-    output wire        ds_allowin,
+    input  wire        es_allowin,  //握手信号
+    output wire        ds_allowin,  //该阶段是否k可以接收数据
     //from if stage
     input  wire        fs_to_ds_valid,
-    input  wire [`FS_TO_DS_BUS_WD -1 :0] fs_to_ds_bus,
+    input  wire [`FS_TO_DS_BUS_WD -1 :0] fs_to_ds_bus,  //上一级缓冲区
     //to ex stage
-    output wire        ds_to_es_valid,
-    output wire [`DS_TO_ES_BUS_WD -1 :0] ds_to_es_bus,
+    output wire        ds_to_es_valid,      //告知下一级数据是否有效
+    output wire [`DS_TO_ES_BUS_WD -1 :0] ds_to_es_bus,  //下一级缓冲区
     //to if stage
-    output wire [`BR_BUS_WD -1 : 0 ] br_bus,
+    output wire [`BR_BUS_WD -1 : 0 ] br_bus,    //跳转信号
     //to rf :write back
-    input  wire [`WS_TO_RF_BUS_WD -1 :0] ws_to_rf_bus
+    input  wire [`WS_TO_RF_BUS_WD -1 :0] ws_to_rf_bus   //写回缓冲区
 );
 
 wire br_taken;
