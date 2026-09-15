@@ -65,7 +65,7 @@ module IF_stage(
 
     assign inst_sram_en = to_fs_valid && fs_allowin;
     assign inst_sram_we = 4'h0;
-    assign inst_sram_addr = fs_pc;
+    assign inst_sram_addr = next_pc;
     assign inst_sram_wdata = 32'b0;
 
     assign fs_inst = inst_sram_rdata;
