@@ -27,8 +27,7 @@ module mycpu_top(
     output wire [ 4:0] debug_wb_rf_wnum,    //写入的寄存器号
     output wire [31:0] debug_wb_rf_wdata    //写入数据
 );
-    reg         reset;
-    always @(posedge clk) reset <= ~resetn;
+    assign reset = ~resetn; //复位信号
 
 
     /*wire [11:0] alu_op;         //
