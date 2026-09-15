@@ -195,6 +195,7 @@ assign src2_is_imm   = inst_slli_w |
                        inst_bl     ;
 
 assign res_from_mem  = inst_ld_w;
+assign load_op       = inst_ld_w;   //加载指令标志
 assign dst_is_r1     = inst_bl;
 assign gr_we         = ~inst_st_w & ~inst_beq & ~inst_bne & ~inst_b ;
 assign mem_we        = inst_st_w;

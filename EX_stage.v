@@ -1,19 +1,25 @@
+`include "mycpu_head.v"
+
 module EX_stage(
     input  wire        clk,
     input  wire        reset,
     //allowin
-    input  wire        mem_allowin,  //握手信号
+    input  wire        ms_allowin,  //握手信号
     output wire        es_allowin,  //该阶段是否k可以接收数据
-    //from mem stage
+    //from ds stage
     input  wire        ds_to_es_valid,
-    input  wire [`DS_TO_EX_BUS_WD -1 :0] ds_to_es_bus,  //上一级缓冲区
-    //to rf :write back
-    output wire        es_to_mem_valid,  //告知下一级数据是否有效
-    output wire [`ES_TO_RF_BUS_WD -1 :0] es_to_rf_bus   //写回缓冲区
+    input  wire [`DS_TO_ES_BUS_WD -1 :0] ds_to_es_bus,  //上一级缓冲区
+    //to ms stage
+    output wire        es_to_ms_valid,  //告知下一级数据是否有效
+    output wire [`ES_TO_MS_BUS_WD -1 :0] es_to_ms_bus   //下一级缓冲区
 );
+        reg es_valid;
+        reg [`DS_TO_ES_BUS_WD -1 :0] ds_to_es_bus_r;
+        wire es_ready_go;
+
         assign es_ready_go    = 1'b1;
-        assign es_allowin      = !es_valid || es_ready_go && mm_allowin;
-        assign es_to_mm_valid  = es_valid && es_ready_go;
+        assign es_allowin      = !es_valid || es_ready_go && ms_allowin;
+        assign es_to_ms_valid  = es_valid && es_ready_go;
         always @(posedge clk) begin
             if (reset) begin
                 es_valid <= 1'b0;
@@ -66,10 +72,14 @@ module EX_stage(
             rj_value,
             rkd_value,
             ds_pc,
-            res_from_mem} = ds_to_es_bus;
+            res_from_mem} = ds_to_es_bus_r;
 
-    assign alu_src1 = src1_is_pc  ? pc[31:0] : rj_value;
+    wire [31:0] alu_src1;
+    wire [31:0] alu_src2;
+    wire [31:0] alu_result;
+    assign alu_src1 = src1_is_pc  ? ds_pc[31:0] : rj_value;
     assign alu_src2 = src2_is_imm ? imm : rkd_value;
+
 
     alu _alu(
         .alu_op(alu_op),
@@ -79,7 +89,7 @@ module EX_stage(
     );
 
 
-    assign es_to_mem_bus = {gr_we,  //写寄存器使能
+    assign es_to_ms_bus = {gr_we,  //写寄存器使能
                             dest,  //写寄存器地址
                             
                             load_op,  //load指令
