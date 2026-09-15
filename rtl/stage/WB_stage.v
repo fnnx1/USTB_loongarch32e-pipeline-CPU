@@ -1,4 +1,4 @@
-`include "mycpu_head.v"
+`include "mycpu_defines.vh"
 
 module WB_stage(
     input  wire        clk,
@@ -34,7 +34,6 @@ module WB_stage(
     //最后一级, 没有下游 allowin
     assign ws_allowin      = !ws_valid || ws_ready_go;
 
-    //数据取自寄存器 ms_to_ws_bus_r, 有效标志必须用 ws_valid(不能用当前的 ms_to_ws_valid)
     assign ws_to_rf_bus = {ws_valid && ms_to_ws_bus_r[69],  //[37]    写寄存器使能
                            ms_to_ws_bus_r[68:64],           //[36:32] 写寄存器地址
                            ms_to_ws_bus_r[63:32]            //[31: 0] 写回数据

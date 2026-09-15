@@ -1,4 +1,4 @@
-`include "mycpu_head.v"
+`include "mycpu_defines.vh"
 
 module IF_stage(
     input wire clk, //时钟

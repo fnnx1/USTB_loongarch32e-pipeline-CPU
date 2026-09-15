@@ -1,4 +1,4 @@
-`include "mycpu_head.v"
+`include "mycpu_defines.vh"
 
 module EX_stage(
     input  wire        clk,
@@ -13,25 +13,25 @@ module EX_stage(
     output wire        es_to_ms_valid,  //告知下一级数据是否有效
     output wire [`ES_TO_MS_BUS_WD -1 :0] es_to_ms_bus   //下一级缓冲区
 );
-        reg es_valid;
-        reg [`DS_TO_ES_BUS_WD -1 :0] ds_to_es_bus_r;
-        wire es_ready_go;
+    reg es_valid;
+    reg [`DS_TO_ES_BUS_WD -1 :0] ds_to_es_bus_r;
+    wire es_ready_go;
 
-        assign es_ready_go    = 1'b1;
-        assign es_allowin      = !es_valid || es_ready_go && ms_allowin;
-        assign es_to_ms_valid  = es_valid && es_ready_go;
-        always @(posedge clk) begin
-            if (reset) begin
-                es_valid <= 1'b0;
-            end
-            else if (es_allowin) begin
-                es_valid <= ds_to_es_valid;
-            end
-
-            if (ds_to_es_valid && es_allowin) begin
-                ds_to_es_bus_r <= ds_to_es_bus;
-            end
+    assign es_ready_go    = 1'b1;
+    assign es_allowin      = !es_valid || es_ready_go && ms_allowin;
+    assign es_to_ms_valid  = es_valid && es_ready_go;
+    always @(posedge clk) begin
+        if (reset) begin
+            es_valid <= 1'b0;
         end
+        else if (es_allowin) begin
+             es_valid <= ds_to_es_valid;
+        end
+
+        if (ds_to_es_valid && es_allowin) begin
+            ds_to_es_bus_r <= ds_to_es_bus;
+        end
+    end
     /*assign ds_to_es_bus = {alu_op       ,  //[151:140] 12 bit
                        load_op      ,  //[139]      1 bit
                        src1_is_pc   ,  //[138]      1 bit
@@ -46,7 +46,7 @@ module EX_stage(
                        ds_pc        ,  //[ 32:  1] 32 bit
                        res_from_mem    //[  0]      1 bit
                       };*/
-    wire [11:0] alu_op;         //
+    wire [11:0] alu_op;
     wire        load_op;
     wire        src1_is_pc;
     wire        src2_is_imm;
@@ -89,17 +89,15 @@ module EX_stage(
     );
 
 
-    // es_to_ms_bus 实际拼接总位宽 = 1+5+1+1+1+32+32+32 = 105 bit
-    // (mycpu_head.v 中 `ES_TO_MS_BUS_WD 定义为 152，高位由 0 补齐)
-    assign es_to_ms_bus = {gr_we        ,  //[104]     1 bit   写寄存器使能
-                            dest         ,  //[103: 99] 5 bit   写寄存器地址
+    assign es_to_ms_bus = {gr_we     ,  //[104]     1 bit   写寄存器使能
+                        dest         ,  //[103: 99] 5 bit   写寄存器地址
                             
-                            load_op      ,  //[ 98]     1 bit   load指令
-                            res_from_mem ,  //[ 97]     1 bit   结果是否来自内存
+                        load_op      ,  //[ 98]     1 bit   load指令
+                        res_from_mem ,  //[ 97]     1 bit   结果是否来自内存
 
-                            mem_we       ,  //[ 96]     1 bit   写内存使能
-                            rkd_value    ,  //[ 95: 64] 32 bit  写内存数据
-                            alu_result   ,  //[ 63: 32] 32 bit  alu计算结果
-                            ds_pc           //[ 31:  0] 32 bit  当前指令的pc,用于debug
-                            };
+                        mem_we       ,  //[ 96]     1 bit   写内存使能
+                        rkd_value    ,  //[ 95: 64] 32 bit  写内存数据
+                        alu_result   ,  //[ 63: 32] 32 bit  alu计算结果
+                        ds_pc           //[ 31:  0] 32 bit  当前指令的pc,用于debug
+                        };
 endmodule

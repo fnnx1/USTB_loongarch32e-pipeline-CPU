@@ -4,7 +4,7 @@
  * ms: memory stage
  * ws: write back stage
  */
-`include "mycpu_head.v"
+`include "mycpu_defines.vh"
 
 module mycpu_top(
     input  wire        clk,
