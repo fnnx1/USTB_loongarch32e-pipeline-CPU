@@ -89,15 +89,17 @@ module EX_stage(
     );
 
 
-    assign es_to_ms_bus = {gr_we,  //写寄存器使能
-                            dest,  //写寄存器地址
+    // es_to_ms_bus 实际拼接总位宽 = 1+5+1+1+1+32+32+32 = 105 bit
+    // (mycpu_head.v 中 `ES_TO_MS_BUS_WD 定义为 152，高位由 0 补齐)
+    assign es_to_ms_bus = {gr_we        ,  //[104]     1 bit   写寄存器使能
+                            dest         ,  //[103: 99] 5 bit   写寄存器地址
                             
-                            load_op,  //load指令
-                            res_from_mem,  //结果是否来自内存
+                            load_op      ,  //[ 98]     1 bit   load指令
+                            res_from_mem ,  //[ 97]     1 bit   结果是否来自内存
 
-                            mem_we,  //写内存使能
-                            rkd_value,  //写内存数据
-                            alu_result,  //alu计算结果
-                            ds_pc  //当前指令的pc,用于debug
+                            mem_we       ,  //[ 96]     1 bit   写内存使能
+                            rkd_value    ,  //[ 95: 64] 32 bit  写内存数据
+                            alu_result   ,  //[ 63: 32] 32 bit  alu计算结果
+                            ds_pc           //[ 31:  0] 32 bit  当前指令的pc,用于debug
                             };
 endmodule

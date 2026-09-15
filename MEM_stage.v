@@ -8,7 +8,7 @@ module MEM_stage(
     output wire        ms_allowin,  //该阶段是否可以接收数据
     //from es stage
     input  wire        es_to_ms_valid,
-    input  wire [`DS_TO_ES_BUS_WD -1 :0] es_to_ms_bus,  //上一级缓冲区
+    input  wire [`ES_TO_MS_BUS_WD -1 :0] es_to_ms_bus,  //上一级缓冲区
     //to rf :write back
     output wire        ms_to_ws_valid,  //告知下一级数据是否有效
     output wire [`MS_TO_WS_BUS_WD -1 :0] ms_to_ws_bus,  //写回缓冲区
@@ -48,6 +48,9 @@ module MEM_stage(
             es_to_ms_bus_r <= es_to_ms_bus;
         end
     end
+    wire        gr_we, mem_we, load_op, res_from_mem;
+    wire [ 4:0] dest;
+    wire [31:0] rkd_value, alu_result, ds_pc;
     assign {gr_we,  //写寄存器使能
             dest,  //写寄存器地址
             
