@@ -25,5 +25,7 @@
 WARNING: Too many words specified in data file ../../../../../../../../func/obj/inst_ram.mif
 ```
 - 解决方法是换个ip核，但也要更改ip核取指范围，同时顶层的soc_lite_top好像还缺少了inst_sram_en字段，遂补充
+
+3. 更改后发现alu移位操作有一些操作数序号反了的问题，遂改正
 ### 接下来要做的
-1. 跑通func1
+1. 跑通func1    (已完成)
