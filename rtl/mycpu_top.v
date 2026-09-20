@@ -70,7 +70,8 @@ module mycpu_top(
         //to if stage
         .br_bus(br_bus),
         //to rf :write back
-        .ws_to_rf_bus(ws_to_rf_bus)
+        .ws_to_rf_bus(ws_to_rf_bus),
+        .es_to_ms_bus(es_to_ms_bus)
     );
 
     EX_stage ex_stage(

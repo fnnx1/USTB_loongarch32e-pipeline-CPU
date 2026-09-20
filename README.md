@@ -28,3 +28,8 @@ WARNING: Too many words specified in data file ../../../../../../../../func/obj/
 3. 更改后发现alu移位操作有一些操作数序号反了的问题，遂改正
 ### 接下来要做的
 1. 跑通func1    (已完成)
+
+
+## 2026.9.20
+### lab2阻塞
+1. 初步设想的是将ex_to_mem的总线传到ID阶段，提取寄存器值判断是否相等
