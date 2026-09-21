@@ -11,7 +11,9 @@ module EX_stage(
     input  wire [`DS_TO_ES_BUS_WD -1 :0] ds_to_es_bus,  //上一级缓冲区
     //to ms stage
     output wire        es_to_ms_valid,  //告知下一级数据是否有效
-    output wire [`ES_TO_MS_BUS_WD -1 :0] es_to_ms_bus   //下一级缓冲区
+    output wire [`ES_TO_MS_BUS_WD -1 :0] es_to_ms_bus,   //下一级缓冲区
+    output wire gr_we,
+    output wire [4 : 0] dest
 );
     reg es_valid;
     reg [`DS_TO_ES_BUS_WD -1 :0] ds_to_es_bus_r;
@@ -23,6 +25,7 @@ module EX_stage(
     always @(posedge clk) begin
         if (reset) begin
             es_valid <= 1'b0;
+            ds_to_es_bus_r <= 0;
         end
         else if (es_allowin) begin
              es_valid <= ds_to_es_valid;
@@ -30,6 +33,9 @@ module EX_stage(
 
         if (ds_to_es_valid && es_allowin) begin
             ds_to_es_bus_r <= ds_to_es_bus;
+        end
+        else begin
+            ds_to_es_bus_r <= 0;
         end
     end
     /*assign ds_to_es_bus = {alu_op       ,  //[151:140] 12 bit
@@ -51,9 +57,7 @@ module EX_stage(
     wire        src1_is_pc;
     wire        src2_is_imm;
     wire        src2_is_4;
-    wire        gr_we;
     wire        mem_we;
-    wire [4: 0] dest;
     wire [31:0] imm;
     wire [31:0] rj_value;
     wire [31:0] rkd_value;

@@ -40,13 +40,14 @@ module WB_stage(
                           };
 
     // debug info generate
-    assign debug_wb_pc       = ms_to_ws_bus_r[31:0];
+    assign debug_wb_pc       = ws_valid ? ms_to_ws_bus_r[31:0] : 32'b0;
     assign debug_wb_rf_we    = {4{ws_valid && ms_to_ws_bus_r[69]}};
-    assign debug_wb_rf_wnum  = ms_to_ws_bus_r[68:64];
-    assign debug_wb_rf_wdata = ms_to_ws_bus_r[63:32];
+    assign debug_wb_rf_wnum  = ws_valid ? ms_to_ws_bus_r[68:64] : 5'b0;
+    assign debug_wb_rf_wdata = ws_valid ? ms_to_ws_bus_r[63:32] : 32'b0;
     always @(posedge clk) begin
         if (reset) begin
             ws_valid <= 1'b0;
+            ms_to_ws_bus_r <= 0;
         end
         else if (ws_allowin) begin
             ws_valid <= ms_to_ws_valid;
@@ -54,6 +55,9 @@ module WB_stage(
 
         if (ms_to_ws_valid && ws_allowin) begin
             ms_to_ws_bus_r <= ms_to_ws_bus;
+        end
+        else begin
+            ms_to_ws_bus_r <= 0;
         end
     end
 endmodule

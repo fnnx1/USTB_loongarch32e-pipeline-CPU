@@ -12,6 +12,8 @@ module MEM_stage(
     //to rf :write back
     output wire        ms_to_ws_valid,  //告知下一级数据是否有效
     output wire [`MS_TO_WS_BUS_WD -1 :0] ms_to_ws_bus,  //写回缓冲区
+    output wire gr_we,
+    output wire [4 : 0]dest,
     //内存访问端口
     output wire [3:0]  data_sram_we,    //数据内存对应字节访问使能
     output wire        data_sram_en,    //数据内存使能
@@ -39,6 +41,7 @@ module MEM_stage(
     always @(posedge clk) begin
         if (reset) begin
             mem_valid <= 1'b0;
+            es_to_ms_bus_r <= 0;
         end
         else if (ms_allowin) begin
             mem_valid <= es_to_ms_valid;
@@ -47,9 +50,11 @@ module MEM_stage(
         if (es_to_ms_valid && ms_allowin) begin
             es_to_ms_bus_r <= es_to_ms_bus;
         end
+        else begin
+            es_to_ms_bus_r <= 0;
+        end
     end
-    wire        gr_we, mem_we, load_op, res_from_mem;
-    wire [ 4:0] dest;
+    wire         mem_we, load_op, res_from_mem;
     wire [31:0] rkd_value, alu_result, ds_pc;
     assign {gr_we,  //写寄存器使能
             dest,  //写寄存器地址

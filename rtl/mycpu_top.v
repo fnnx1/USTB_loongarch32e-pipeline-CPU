@@ -27,6 +27,7 @@ module mycpu_top(
     output wire [ 4:0] debug_wb_rf_wnum,    //写入的寄存器号
     output wire [31:0] debug_wb_rf_wdata    //写入数据
 );
+    wire reset;
     assign reset = ~resetn; //复位信号
     wire        ds_allowin, es_allowin, ms_allowin, ws_allowin;
     wire        fs_to_ds_valid, ds_to_es_valid, es_to_ms_valid, ms_to_ws_valid;
@@ -71,7 +72,9 @@ module mycpu_top(
         .br_bus(br_bus),
         //to rf :write back
         .ws_to_rf_bus(ws_to_rf_bus),
-        .es_to_ms_bus(es_to_ms_bus)
+        .es_to_ms_bus(es_to_ms_bus),
+        .es_dest(es_to_ms_bus[104:99]),
+        .ms_dest(ms_to_ws_bus[69:64])
     );
 
     EX_stage ex_stage(

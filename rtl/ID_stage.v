@@ -17,7 +17,9 @@ module ID_stage(
     //to rf :write back
     input  wire [`WS_TO_RF_BUS_WD -1 :0] ws_to_rf_bus,   //写回缓冲区
     //处理冲突
-    input wire  [`ES_TO_MS_BUS_WD -1 :0] es_to_ms_bus   //来自es阶段的冲突信号
+    input wire  [`ES_TO_MS_BUS_WD -1 :0] es_to_ms_bus,   //来自es阶段的冲突信号
+    input wire  [5 : 0] es_dest,
+    input wire  [5 : 0] ms_dest
 
 );
 
@@ -258,10 +260,13 @@ assign ds_to_es_bus = {alu_op       ,  //[151:140] 12 bit
                        res_from_mem    //[  0]      1 bit
                       };
 // 是否是写指令，且是否寄存器值相等
-assign ds_ready_go    = (es_to_ms_bus[0] && ((es_to_ms_bus[103 : 99] == rf_raddr1 && rf_addr1 != 0) || (es_to_ms_bus[103 : 99] == rf_raddr2 && rf_addr2 != 0))) ? 1'b0 : 1'b1;
+assign ds_ready_go = !((es_dest[5] && ((es_dest[4 : 0] == rf_raddr1 && rf_raddr1 != 0)|| (es_dest[4 : 0] == rf_raddr2 && rf_raddr2 != 0)))
+                ||  (ms_dest[5] && ((ms_dest[4 : 0] == rf_raddr1 && rf_raddr1 != 0)|| (ms_dest[4 : 0] == rf_raddr2 && rf_raddr2 != 0)))
+                || (ws_to_rf_bus[37] && ((ws_to_rf_bus[36 : 32] == rf_raddr1 && rf_raddr1 != 0))) || (ws_to_rf_bus[37] && ((ws_to_rf_bus[36 : 32] == rf_raddr2 && rf_raddr2 != 0))));
+
 assign ds_allowin      = !ds_valid || ds_ready_go && es_allowin;
-assign ds_to_es_valid  = ds_valid && ds_ready_go
-always @(posege clk) begin
+assign ds_to_es_valid  = ds_valid && ds_ready_go;
+always @(posedge clk) begin
     if (reset) begin
         ds_valid <= 1'b0;
     end
