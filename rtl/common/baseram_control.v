@@ -5,7 +5,7 @@ module BaseRAM_control(
     input  wire        inst_sram_en,
     input  wire [31:0] inst_sram_addr,
     input  wire [31:0] inst_sram_wdata,
-    output reg  [31:0] inst_sram_rdata,
+    output wire  [31:0] inst_sram_rdata,
     input  wire [ 3:0] inst_sram_we,
 
     // to base ram
@@ -27,12 +27,6 @@ assign base_ram_addr = inst_sram_addr[21:2];
 
 assign base_ram_data = ~base_ram_we_n ? inst_sram_wdata : 32'hz;
 
-always @(posedge clk) begin
-    if (reset) begin
-        inst_sram_rdata <= 32'hz;
-    end else if (~base_ram_oe_n) begin
-        inst_sram_rdata <= base_ram_data;
-    end
-end
+assign inst_sram_rdata = reset ? 32'hz : base_ram_data;
 
 endmodule

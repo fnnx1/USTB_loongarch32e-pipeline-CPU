@@ -147,7 +147,7 @@ mycpu_top cpu(
     .inst_sram_en     (cpu_inst_en   ),
     .inst_sram_addr   (cpu_inst_addr ),
     .inst_sram_wdata  (cpu_inst_wdata),
-    .inst_sram_rdata  (cpu_inst_rdata),
+    .inst_sram_rdata  (inst_sram_rdata),
 
     .data_sram_we     (cpu_data_we   ),
     .data_sram_en     (data_sram_en  ),
@@ -167,15 +167,16 @@ wire [3 : 0] base_ram_be_n;
 wire        base_ram_ce_n;
 wire        base_ram_oe_n;
 wire        base_ram_we_n;
+wire [31 : 0] inst_sram_rdata;
 
 BaseRAM_control inst_ram_control(
     .clk(cpu_clk),
-    .reset(cpu_resetn),
+    .reset(~cpu_resetn),
     // from cpu
     .inst_sram_en(cpu_inst_en),
     .inst_sram_addr(cpu_inst_addr),
     .inst_sram_wdata(cpu_inst_wdata),
-    .inst_sram_rdata(cpu_inst_rdata),
+    .inst_sram_rdata(inst_sram_rdata),
     .inst_sram_we(cpu_inst_we),
 
     // to base ram
