@@ -193,7 +193,7 @@ inst_ram inst_ram
     .clka  (cpu_clk),
     .ena   (~base_ram_ce_n),
     .wea   (base_ram_be_n),
-    .addra (base_ram_addr[19 : 2]),
+    .addra (base_ram_addr[17 : 0]),
     .dina  (cpu_inst_wdata),
     .douta (cpu_inst_rdata)
 );
