@@ -150,7 +150,8 @@ mycpu_top cpu(
     .inst_sram_rdata  (inst_sram_rdata),
 
     .data_sram_we     (cpu_data_we   ),
-    .data_sram_en     (data_sram_en  ),
+    // 不连接: bridge_1x2 会用 cpu_data_we/addr 自行译码出 data_sram_en 并驱动同名网线,
+    .data_sram_en     (               ),
     .data_sram_addr   (cpu_data_addr ),
     .data_sram_wdata  (cpu_data_wdata),
     .data_sram_rdata  (cpu_data_rdata),
