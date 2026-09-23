@@ -41,3 +41,8 @@ WARNING: Too many words specified in data file ../../../../../../../../func/obj/
 4. 哇，教材十分的强力且活人味啊，十分清晰。
 ### lab2前递
 1. 目前只实现了load指令的延迟，以及普通运算指令的冲突处理，load系指令的延迟加载似乎要等到第四章(?)
+
+## 2026.9.23
+### lab3指令
+1. bl，似乎第一个要实现的指令是这个
+2. 实际并非，其实是每次更换obj后还要重新生成一次inst_ram，否则inst_ram会存储原来的旧数据。但gettrace生成的golden_trace是新的
