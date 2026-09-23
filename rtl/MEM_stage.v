@@ -12,8 +12,6 @@ module MEM_stage(
     //to rf :write back
     output wire        ms_to_ws_valid,  //告知下一级数据是否有效
     output wire [`MS_TO_WS_BUS_WD -1 :0] ms_to_ws_bus,  //写回缓冲区
-    output wire gr_we,
-    output wire [4 : 0]dest,
     //内存访问端口
     output wire [3:0]  data_sram_we,    //数据内存对应字节访问使能
     output wire        data_sram_en,    //数据内存使能
@@ -54,7 +52,8 @@ module MEM_stage(
             es_to_ms_bus_r <= 0;
         end
     end
-    wire         mem_we, load_op, res_from_mem;
+    wire         mem_we, gr_we,res_from_mem;
+    wire [4:0]dest;
     wire [31:0] rkd_value, alu_result, ds_pc;
     assign {gr_we,  //写寄存器使能
             dest,  //写寄存器地址
@@ -76,7 +75,8 @@ module MEM_stage(
     assign data_sram_wdata = rkd_value;
 
     // ms_to_ws_bus 总位宽 = 1+5+32+32 = 70 bit
-    assign ms_to_ws_bus = {gr_we        ,  //[69]     写寄存器使能
+    assign ms_to_ws_bus = {load_op      ,  //[70]     load标志
+                           gr_we        ,  //[69]     写寄存器使能
                            dest         ,  //[68:64]  写寄存器地址
                            final_result ,  //[63:32]  写回数据(load/alu 已 mux)
                            ds_pc           //[31: 0]  当前指令的pc, 用于debug

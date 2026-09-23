@@ -18,8 +18,8 @@ module ID_stage(
     input  wire [`WS_TO_RF_BUS_WD -1 :0] ws_to_rf_bus,   //写回缓冲区
     //处理冲突
     input wire  [`ES_TO_MS_BUS_WD -1 :0] es_to_ms_bus,   //来自es阶段的冲突信号
-    input wire  [5 : 0] es_dest,
-    input wire  [5 : 0] ms_dest
+    input wire  [38 : 0] es_dest,   //load_op , gr_we , dest[5] , data[32]
+    input wire  [38 : 0] ms_dest
 
 );
 
@@ -102,10 +102,6 @@ wire [ 4:0] rf_raddr1;
 wire [31:0] rf_rdata1;
 wire [ 4:0] rf_raddr2;
 wire [31:0] rf_rdata2;
-
-wire rf_we ; //写使能
-wire [4:0] rf_waddr;
-wire [31:0] rf_wdata;
 
 wire [31:0] alu_src1 ;
 wire [31:0] alu_src2;
@@ -209,6 +205,14 @@ assign dest          = dst_is_r1 ? 5'd1 : rd;
 assign rf_raddr1 = rj;
 assign rf_raddr2 = src_reg_is_rd ? rd :rk;
 
+wire rf_we ; //写使能
+wire [4:0] rf_waddr;
+wire [31:0] rf_wdata;
+
+assign rf_we = !reset && ws_to_rf_bus[37];
+assign rf_waddr = ws_to_rf_bus[36:32];
+assign rf_wdata = ws_to_rf_bus[31:0];
+
 regfile u_regfile(
     .clk    (clk    ),
     .raddr1 (rf_raddr1),
@@ -220,8 +224,22 @@ regfile u_regfile(
     .wdata  (rf_wdata )
 );
 
-assign rj_value  = rf_rdata1;
-assign rkd_value = rf_rdata2;
+//冲突信号
+wire es_match_rj = es_dest[37] && (es_dest[36:32] == rf_raddr1) && (rf_raddr1 != 5'd0);
+wire es_match_rkd = es_dest[37] && (es_dest[36:32] == rf_raddr2) && (rf_raddr2 != 5'd0);
+wire ms_match_rj = ms_dest[37] && (ms_dest[36:32] == rf_raddr1) && (rf_raddr1 != 5'd0);
+wire ms_match_rkd = ms_dest[37] && (ms_dest[36:32] == rf_raddr2) && (rf_raddr2 != 5'd0);
+wire ws_match_rj = ws_to_rf_bus[37] && (ws_to_rf_bus[36:32] == rf_raddr1) && (rf_raddr1 != 5'd0);
+wire ws_match_rkd = ws_to_rf_bus[37] && (ws_to_rf_bus[36:32] == rf_raddr2) && (rf_raddr2 != 5'd0);
+
+assign rj_value = (es_match_rj && !es_dest[38]) ? es_dest[31:0] :
+                  (ms_match_rj && !ms_dest[38]) ? ms_dest[31:0] :
+                  (ws_match_rj && !ws_to_rf_bus[38]) ? ws_to_rf_bus[31:0] :
+                  rf_rdata1;
+assign rkd_value = (es_match_rkd && !es_dest[38]) ? es_dest[31:0] :
+                   (ms_match_rkd && !ms_dest[38]) ? ms_dest[31:0] :
+                   (ws_match_rkd && !ws_to_rf_bus[38]) ? ws_to_rf_bus[31:0] :
+                   rf_rdata2;
 
 assign rj_eq_rd = (rj_value == rkd_value);
 assign br_taken = (  inst_beq  &&  rj_eq_rd
@@ -229,7 +247,7 @@ assign br_taken = (  inst_beq  &&  rj_eq_rd
                   || inst_jirl
                   || inst_bl
                   || inst_b
-                  ) && ds_valid;
+                  ) && ds_valid && ds_ready_go;
 assign br_target = (inst_beq || inst_bne || inst_bl || inst_b) ? (ds_pc + br_offs) :
                                                    /*inst_jirl*/ (rj_value + jirl_offs);
 
@@ -239,10 +257,10 @@ reg [`FS_TO_DS_BUS_WD -1 :0] fs_to_ds_bus_r;
 assign {ds_inst,
         ds_pc} = fs_to_ds_bus_r;
 
-assign {rf_we, //37:37
+/*assign {rf_we, //37:37
         rf_waddr, //36:32
         rf_wdata //31:0
-       } = ws_to_rf_bus;
+       } = ws_to_rf_bus;*/
 
 // ds_to_es_bus 总位宽 = 12+1+1+1+1+1+1+5+32+32+32+32+1 = 152 bit
 assign ds_to_es_bus = {alu_op       ,  //[151:140] 12 bit
@@ -259,11 +277,13 @@ assign ds_to_es_bus = {alu_op       ,  //[151:140] 12 bit
                        ds_pc        ,  //[ 32:  1] 32 bit
                        res_from_mem    //[  0]      1 bit
                       };
-// 是否是写指令，且是否寄存器值相等
-assign ds_ready_go = !((es_dest[5] && ((es_dest[4 : 0] == rf_raddr1 && rf_raddr1 != 0)|| (es_dest[4 : 0] == rf_raddr2 && rf_raddr2 != 0)))
-                ||  (ms_dest[5] && ((ms_dest[4 : 0] == rf_raddr1 && rf_raddr1 != 0)|| (ms_dest[4 : 0] == rf_raddr2 && rf_raddr2 != 0)))
-                || (ws_to_rf_bus[37] && ((ws_to_rf_bus[36 : 32] == rf_raddr1 && rf_raddr1 != 0))) || (ws_to_rf_bus[37] && ((ws_to_rf_bus[36 : 32] == rf_raddr2 && rf_raddr2 != 0))));
 
+wire es_load_hazard = es_dest[38] && (es_match_rj || es_match_rkd);
+wire ms_load_hazard = ms_dest[38] && (ms_match_rj || ms_match_rkd);
+wire ws_load_hazard = ws_to_rf_bus[38] && (ws_match_rj || ws_match_rkd);    
+wire load_data_hazard = es_load_hazard || ms_load_hazard || ws_load_hazard;
+assign ds_ready_go = reset || !load_data_hazard;
+// 是否是写指令，且是否寄存器值相等
 assign ds_allowin      = !ds_valid || ds_ready_go && es_allowin;
 assign ds_to_es_valid  = ds_valid && ds_ready_go;
 always @(posedge clk) begin

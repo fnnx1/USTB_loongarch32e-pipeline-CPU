@@ -11,9 +11,8 @@ module EX_stage(
     input  wire [`DS_TO_ES_BUS_WD -1 :0] ds_to_es_bus,  //上一级缓冲区
     //to ms stage
     output wire        es_to_ms_valid,  //告知下一级数据是否有效
-    output wire [`ES_TO_MS_BUS_WD -1 :0] es_to_ms_bus,   //下一级缓冲区
-    output wire gr_we,
-    output wire [4 : 0] dest
+    output wire [`ES_TO_MS_BUS_WD -1 :0] es_to_ms_bus  //下一级缓冲区
+
 );
     reg es_valid;
     reg [`DS_TO_ES_BUS_WD -1 :0] ds_to_es_bus_r;
@@ -53,7 +52,10 @@ module EX_stage(
                        res_from_mem    //[  0]      1 bit
                       };*/
     wire [11:0] alu_op;
-    wire        load_op;
+    wire load_op;
+    wire ex_gr_we;
+    wire [4:0] dest;
+    wire [31:0] alu_result;
     wire        src1_is_pc;
     wire        src2_is_imm;
     wire        src2_is_4;
@@ -69,7 +71,7 @@ module EX_stage(
             src1_is_pc,
             src2_is_imm,
             src2_is_4,
-            gr_we,
+            ex_gr_we,
             mem_we,
             dest,
             imm,
@@ -80,7 +82,6 @@ module EX_stage(
 
     wire [31:0] alu_src1;
     wire [31:0] alu_src2;
-    wire [31:0] alu_result;
     assign alu_src1 = src1_is_pc  ? ds_pc[31:0] : rj_value;
     assign alu_src2 = src2_is_imm ? imm : rkd_value;
 
@@ -93,7 +94,7 @@ module EX_stage(
     );
 
 
-    assign es_to_ms_bus = {gr_we     ,  //[104]     1 bit   写寄存器使能
+    assign es_to_ms_bus = {ex_gr_we     ,  //[104]     1 bit   写寄存器使能
                         dest         ,  //[103: 99] 5 bit   写寄存器地址
                             
                         load_op      ,  //[ 98]     1 bit   load指令

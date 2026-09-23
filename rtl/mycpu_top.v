@@ -73,8 +73,8 @@ module mycpu_top(
         //to rf :write back
         .ws_to_rf_bus(ws_to_rf_bus),
         .es_to_ms_bus(es_to_ms_bus),
-        .es_dest(es_to_ms_bus[104:99]),
-        .ms_dest(ms_to_ws_bus[69:64])
+        .es_dest({es_to_ms_bus[98],es_to_ms_bus[104:99], es_to_ms_bus[63:32]}),
+        .ms_dest({ms_to_ws_bus[70],ms_to_ws_bus[69:64], ms_to_ws_bus[63:32]})
     );
 
     EX_stage ex_stage(
