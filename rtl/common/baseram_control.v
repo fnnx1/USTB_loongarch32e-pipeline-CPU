@@ -2,31 +2,37 @@ module BaseRAM_control(
     input  wire        clk,
     input  wire        reset,
     // from cpu
-    input  wire        inst_sram_en,
-    input  wire [31:0] inst_sram_addr,
-    input  wire [31:0] inst_sram_wdata,
-    output wire  [31:0] inst_sram_rdata,
-    input  wire [ 3:0] inst_sram_we,
+    input  wire        data_sram_en,
+    input  wire [31:0] data_sram_addr,
+    input  wire [31:0] data_sram_wdata,
+    output reg  [31:0] data_sram_rdata,
+    input  wire [ 3:0] data_sram_we,
 
     // to base ram
     inout  wire [31:0] base_ram_data,
     output wire [19:0] base_ram_addr,
-    output wire [ 3:0] base_ram_be_n, // Byte Enable，字节使能，低有效
-    output wire        base_ram_ce_n, // Chip Enable，芯片使能，低有效
-    output wire        base_ram_oe_n, // Output Enable，输出使能，低有效
-    output wire        base_ram_we_n  // Write Enable，写使能，低有效
+    output wire [ 3:0] base_ram_be_n,
+    output wire        base_ram_ce_n,
+    output wire        base_ram_oe_n,
+    output wire        base_ram_we_n
 );
 
-assign base_ram_be_n = ( | inst_sram_we && inst_sram_en) ? ~inst_sram_we : 4'h0
+assign base_ram_be_n = (|data_sram_we && data_sram_en) ? ~data_sram_we : 4'hf
     ;
-assign base_ram_ce_n = ~inst_sram_en;
-assign base_ram_we_n = ~( | inst_sram_we && inst_sram_en);
-assign base_ram_oe_n = ( | inst_sram_we && inst_sram_en);
+assign base_ram_ce_n = ~data_sram_en;
+assign base_ram_we_n = ~( | data_sram_we && data_sram_en);
+assign base_ram_oe_n = ~data_sram_en | (|data_sram_we);
 
-assign base_ram_addr = inst_sram_addr[21:2];
+assign base_ram_addr = data_sram_addr[21:2];
 
-assign base_ram_data = ~base_ram_we_n ? inst_sram_wdata : 32'hz;
+assign base_ram_data = ~base_ram_we_n ? data_sram_wdata : 32'hz;
 
-assign inst_sram_rdata = reset ? 32'hz : base_ram_data;
+always @(posedge clk) begin
+    if (reset) begin
+        data_sram_rdata <= 32'b0;
+    end else if (data_sram_en && !(|data_sram_we)) begin
+        data_sram_rdata <= base_ram_data;
+    end
+end
 
 endmodule

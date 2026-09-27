@@ -14,7 +14,8 @@ module WB_stage(
     output wire [31:0] debug_wb_pc,
     output wire [ 3:0] debug_wb_rf_we,
     output wire [ 4:0] debug_wb_rf_wnum,
-    output wire [31:0] debug_wb_rf_wdata
+    output wire [31:0] debug_wb_rf_wdata,
+    input  wire [31:0] data_sram_rdata  //访存数据
 );
     reg ws_valid;
     reg [`MS_TO_WS_BUS_WD -1 :0] ms_to_ws_bus_r;
@@ -34,17 +35,17 @@ module WB_stage(
     //最后一级, 没有下游 allowin
     assign ws_allowin      = !ws_valid || ws_ready_go;
 
-    assign ws_to_rf_bus = {ws_valid && ms_to_ws_bus_r[70],  //[38]    load标志
-                           ws_valid && ms_to_ws_bus_r[69],  //[37]    写寄存器使能
-                           ms_to_ws_bus_r[68:64],           //[36:32] 写寄存器地址
-                           ms_to_ws_bus_r[63:32]            //[31: 0] 写回数据
+    assign ws_to_rf_bus = {ws_valid && ms_to_ws_bus_r[71],  //[38]    load标志
+                           ws_valid && ms_to_ws_bus_r[70],  //[37]    写寄存器使能
+                           ms_to_ws_bus_r[69:65],           //[36:32] 写寄存器地址
+                           ms_to_ws_bus_r[64] ? data_sram_rdata : ms_to_ws_bus_r[63:32]            //[31: 0] 写回数据
                           };
 
     // debug info generate
     assign debug_wb_pc       = ws_valid ? ms_to_ws_bus_r[31:0] : 32'b0;
-    assign debug_wb_rf_we    = {4{ws_valid && ms_to_ws_bus_r[69]}};
-    assign debug_wb_rf_wnum  = ws_valid ? ms_to_ws_bus_r[68:64] : 5'b0;
-    assign debug_wb_rf_wdata = ws_valid ? ms_to_ws_bus_r[63:32] : 32'b0;
+    assign debug_wb_rf_we    = {4{ws_valid && ms_to_ws_bus_r[70]}};
+    assign debug_wb_rf_wnum  = ws_valid ? ms_to_ws_bus_r[69:65] : 5'b0;
+    assign debug_wb_rf_wdata = ws_valid ? ws_to_rf_bus[31:0] : 32'b0;
     always @(posedge clk) begin
         if (reset) begin
             ws_valid <= 1'b0;

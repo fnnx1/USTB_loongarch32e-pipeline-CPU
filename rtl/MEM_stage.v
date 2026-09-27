@@ -16,8 +16,7 @@ module MEM_stage(
     output wire [3:0]  data_sram_we,    //数据内存对应字节访问使能
     output wire        data_sram_en,    //数据内存使能
     output wire [31:0] data_sram_addr,  //访问地址
-    output wire [31:0] data_sram_wdata, //写入数据
-    input  wire [31:0] data_sram_rdata //读数据
+    output wire [31:0] data_sram_wdata //写入数据
 );
     reg mem_valid;
     reg [`ES_TO_MS_BUS_WD -1 :0] es_to_ms_bus_r;
@@ -66,7 +65,6 @@ module MEM_stage(
             alu_result,  //alu计算结果
             ds_pc  //当前指令的pc,用于debug
             } = es_to_ms_bus_r;
-    wire [31:0] final_result = res_from_mem ? data_sram_rdata : alu_result;
 
     //访存请求只在本级有效时才发出
     assign data_sram_en    = mem_valid && (mem_we | res_from_mem);
@@ -75,10 +73,11 @@ module MEM_stage(
     assign data_sram_wdata = rkd_value;
 
     // ms_to_ws_bus 总位宽 = 1+5+32+32 = 70 bit
-    assign ms_to_ws_bus = {load_op      ,  //[70]     load标志
-                           gr_we        ,  //[69]     写寄存器使能
-                           dest         ,  //[68:64]  写寄存器地址
-                           final_result ,  //[63:32]  写回数据(load/alu 已 mux)
+    assign ms_to_ws_bus = {load_op      ,  //[71]     load标志
+                           gr_we        ,  //[70]     写寄存器使能
+                           dest         ,  //[69:65]  写寄存器地址
+                           res_from_mem ,
+                           alu_result ,  //[63:32]  写回数据(load/alu 已 mux)
                            ds_pc           //[31: 0]  当前指令的pc, 用于debug
                           };
 endmodule

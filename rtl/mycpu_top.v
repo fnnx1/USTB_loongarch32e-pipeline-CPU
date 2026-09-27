@@ -74,7 +74,7 @@ module mycpu_top(
         .ws_to_rf_bus(ws_to_rf_bus),
         .es_to_ms_bus(es_to_ms_bus),
         .es_dest({es_to_ms_bus[98],es_to_ms_bus[104:99], es_to_ms_bus[63:32]}),
-        .ms_dest({ms_to_ws_bus[70],ms_to_ws_bus[69:64], ms_to_ws_bus[63:32]})
+        .ms_dest({ms_to_ws_bus[71],ms_to_ws_bus[70:65], ms_to_ws_bus[63:32]})
     );
 
     EX_stage ex_stage(
@@ -107,8 +107,7 @@ module mycpu_top(
         .data_sram_en(data_sram_en),
         .data_sram_we(data_sram_we),
         .data_sram_addr(data_sram_addr),
-        .data_sram_wdata(data_sram_wdata),
-        .data_sram_rdata(data_sram_rdata)
+        .data_sram_wdata(data_sram_wdata)
     );
 
     WB_stage wb_stage(
@@ -125,6 +124,7 @@ module mycpu_top(
         .debug_wb_pc(debug_wb_pc),
         .debug_wb_rf_we(debug_wb_rf_we),
         .debug_wb_rf_wnum(debug_wb_rf_wnum),
-        .debug_wb_rf_wdata(debug_wb_rf_wdata)
+        .debug_wb_rf_wdata(debug_wb_rf_wdata),
+        .data_sram_rdata(data_sram_rdata)
     );
 endmodule
