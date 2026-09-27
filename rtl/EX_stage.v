@@ -51,6 +51,8 @@ module EX_stage(
                        ds_pc        ,  //[ 32:  1] 32 bit
                        res_from_mem    //[  0]      1 bit
                       };*/
+    wire load_signed;
+    wire [1:0] mem_size;
     wire [11:0] alu_op;
     wire load_op;
     wire ex_gr_we;
@@ -66,7 +68,10 @@ module EX_stage(
     wire [31:0] ds_pc;
     wire        res_from_mem;
 
-    assign {alu_op,
+    assign {
+            load_signed,
+            mem_size,
+            alu_op,
             load_op,
             src1_is_pc,
             src2_is_imm,
@@ -94,7 +99,10 @@ module EX_stage(
     );
 
 
-    assign es_to_ms_bus = {ex_gr_we     ,  //[104]     1 bit   写寄存器使能
+    assign es_to_ms_bus = {
+                        load_signed,  //[107]     1 bit   加载的数据是否要进行有符号扩展
+                        mem_size,    //[106:105] 2 bit   内存写入/读取的数据大小    
+                        ex_gr_we     ,  //[104]     1 bit   写寄存器使能
                         dest         ,  //[103: 99] 5 bit   写寄存器地址
                             
                         load_op      ,  //[ 98]     1 bit   load指令

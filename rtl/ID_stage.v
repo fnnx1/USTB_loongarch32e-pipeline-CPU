@@ -34,6 +34,8 @@ wire        ds_ready_go;
 
 wire [11:0] alu_op;
 
+wire load_signed;  //加载的数据是否要进行有符号扩展
+wire [1:0] mem_size;  //内存写入/读取的数据大小
 wire load_op;  //加载信号
 wire src1_is_pc; //来自src为pc地址
 wire src2_is_imm; //src2为imm
@@ -103,6 +105,7 @@ wire        inst_blt;
 wire        inst_bge;
 wire        inst_bltu;
 wire        inst_bgeu;
+wire        inst_ld_b;
 
 wire        need_ui5;
 wire        need_si12;
@@ -175,8 +178,9 @@ assign inst_blt = op_31_26_d[6'h18];
 assign inst_bge = op_31_26_d[6'h19];
 assign inst_bltu   = op_31_26_d[6'h1a];
 assign inst_bgeu   = op_31_26_d[6'h1b];
+assign inst_ld_b   = op_31_26_d[6'h0a] & op_25_22_d[4'h0];
 
-assign alu_op[ 0] = inst_add_w | inst_addi_w | inst_ld_w | inst_st_w
+assign alu_op[ 0] = inst_add_w | inst_addi_w | inst_ld_w | inst_ld_b | inst_st_w
                     | inst_jirl | inst_bl | inst_pcaddu12i;
 assign alu_op[ 1] = inst_sub_w;
 assign alu_op[ 2] = inst_slt | inst_slti;
@@ -193,7 +197,7 @@ assign alu_op[11] = inst_lu12i_w;
 //信号
 assign need_ui5  = inst_slli_w | inst_srli_w | inst_srai_w;
 assign need_u12  = inst_andi | inst_ori | inst_xori;
-assign need_si12 = inst_addi_w | inst_ld_w | inst_st_w | inst_slti | inst_sltui;
+assign need_si12 = inst_addi_w | inst_ld_w | inst_ld_b | inst_st_w | inst_slti | inst_sltui ;
 assign need_si16 = inst_jirl | inst_beq | inst_bne | inst_blt | inst_bge | inst_bltu | inst_bgeu;
 assign need_si20 = inst_lu12i_w | inst_pcaddu12i;
 assign need_si26 = inst_b | inst_bl;
@@ -218,6 +222,7 @@ assign src2_is_imm   = inst_slli_w |
                        inst_srai_w |
                        inst_addi_w |
                        inst_ld_w   |
+                       inst_ld_b   |
                        inst_st_w   |
                        inst_lu12i_w|
                        inst_pcaddu12i |
@@ -229,8 +234,13 @@ assign src2_is_imm   = inst_slli_w |
                        inst_jirl   |
                        inst_bl     ;
 
-assign res_from_mem  = inst_ld_w;
-assign load_op       = inst_ld_w;   //加载指令标志
+assign res_from_mem  = inst_ld_w | inst_ld_b;   //备战未来（？
+assign load_op       = inst_ld_w | inst_ld_b;   //加载指令标志
+assign load_signed = inst_ld_b | inst_ld_w;
+assign mem_size = inst_ld_b ? `B :
+                  inst_ld_w ? `W :
+                  inst_st_w ? `W :
+                  0;
 assign dst_is_r1     = inst_bl;
 assign gr_we         = ~inst_st_w & ~inst_beq & ~inst_bne & ~inst_b & ~inst_blt & ~inst_bge & ~inst_bltu & ~inst_bgeu;
 assign mem_we        = inst_st_w;
@@ -300,20 +310,23 @@ assign {ds_inst,
         rf_wdata //31:0
        } = ws_to_rf_bus;*/
 
-// ds_to_es_bus 总位宽 = 12+1+1+1+1+1+1+5+32+32+32+32+1 = 152 bit
-assign ds_to_es_bus = {alu_op       ,  //[151:140] 12 bit
-                       load_op      ,  //[139]      1 bit
-                       src1_is_pc   ,  //[138]      1 bit
-                       src2_is_imm  ,  //[137]      1 bit
-                       src2_is_4    ,  //[136]      1 bit
-                       gr_we        ,  //[135]      1 bit
-                       mem_we       ,  //[134]      1 bit
-                       dest         ,  //[133:129]  5 bit
-                       imm          ,  //[128: 97] 32 bit
-                       rj_value     ,  //[ 96: 65] 32 bit
-                       rkd_value    ,  //[ 64: 33] 32 bit
-                       ds_pc        ,  //[ 32:  1] 32 bit
-                       res_from_mem    //[  0]      1 bit
+// ds_to_es_bus 总位宽 = 1+2+12+1+1+1+1+1+1+5+32+32+32+32+1 = 155 bit
+assign ds_to_es_bus = {
+                        load_signed,  //[154]     1  bit
+                        mem_size     ,  //[153:152] 2  bit
+                        alu_op       ,  //[151:140] 12 bit
+                        load_op      ,  //[139]      1 bit
+                        src1_is_pc   ,  //[138]      1 bit
+                        src2_is_imm  ,  //[137]      1 bit
+                        src2_is_4    ,  //[136]      1 bit
+                        gr_we        ,  //[135]      1 bit
+                        mem_we       ,  //[134]      1 bit
+                        dest         ,  //[133:129]  5 bit
+                        imm          ,  //[128: 97] 32 bit
+                        rj_value     ,  //[ 96: 65] 32 bit
+                        rkd_value    ,  //[ 64: 33] 32 bit
+                        ds_pc        ,  //[ 32:  1] 32 bit
+                        res_from_mem    //[  0]      1 bit
                       };
 
 wire es_load_hazard = es_dest[38] && (es_match_rj || es_match_rkd);

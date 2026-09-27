@@ -51,10 +51,14 @@ module MEM_stage(
             es_to_ms_bus_r <= 0;
         end
     end
-    wire         mem_we, gr_we,res_from_mem;
+    wire         mem_we, gr_we,res_from_mem, load_op, load_signed;
+    wire [1:0] mem_size ,mem_addr_offset;
     wire [4:0]dest;
     wire [31:0] rkd_value, alu_result, ds_pc;
-    assign {gr_we,  //写寄存器使能
+    assign {
+            load_signed,  //load指令
+            mem_size,
+            gr_we,  //写寄存器使能
             dest,  //写寄存器地址
             
             load_op,  //load指令
@@ -72,12 +76,17 @@ module MEM_stage(
     assign data_sram_addr  = alu_result;
     assign data_sram_wdata = rkd_value;
 
+    assign mem_addr_offset = alu_result[1:0];   //内存地址的偏移量
     // ms_to_ws_bus 总位宽 = 1+5+32+32 = 70 bit
-    assign ms_to_ws_bus = {load_op      ,  //[71]     load标志
-                           gr_we        ,  //[70]     写寄存器使能
-                           dest         ,  //[69:65]  写寄存器地址
-                           res_from_mem ,
-                           alu_result ,  //[63:32]  写回数据(load/alu 已 mux)
-                           ds_pc           //[31: 0]  当前指令的pc, 用于debug
+    assign ms_to_ws_bus = {
+                            mem_addr_offset ,  //[76:75]  内存地址的偏移量
+                            load_signed  ,  //[74]     load指令是否有符号扩展
+                            mem_size     ,  //[73:72]
+                            load_op      ,  //[71]     load标志
+                            gr_we        ,  //[70]     写寄存器使能
+                            dest         ,  //[69:65]  写寄存器地址
+                            res_from_mem ,
+                            alu_result ,  //[63:32]  写回数据(load/alu 已 mux)
+                            ds_pc           //[31: 0]  当前指令的pc, 用于debug
                           };
 endmodule

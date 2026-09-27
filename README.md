@@ -50,3 +50,8 @@ WARNING: Too many words specified in data file ../../../../../../../../func/obj/
 -  Reset Output Products + Generate Output Products
 3. 添加算术逻辑运算类指令 slti、sltui、andi、ori、xori、sll、srl、sra、pcaddu12i(已达成)
 4. 已完成blt，bltu，bge，bgeu，已完成第三章
+
+## 2026.9.27
+### lab4
+#### ld.b
+1. 实现了一个ld字节选框架，并通过了ld.b那块的测试
