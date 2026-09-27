@@ -107,6 +107,8 @@ wire        inst_bltu;
 wire        inst_bgeu;
 wire        inst_ld_b;
 wire        inst_ld_h;
+wire        inst_ld_bu;
+wire        inst_ld_hu;
 
 wire        need_ui5;
 wire        need_si12;
@@ -181,9 +183,11 @@ assign inst_bltu   = op_31_26_d[6'h1a];
 assign inst_bgeu   = op_31_26_d[6'h1b];
 assign inst_ld_b   = op_31_26_d[6'h0a] & op_25_22_d[4'h0];
 assign inst_ld_h   = op_31_26_d[6'h0a] & op_25_22_d[4'h1];
+assign inst_ld_bu  = op_31_26_d[6'h0a] & op_25_22_d[4'h8];
+assign inst_ld_hu  = op_31_26_d[6'h0a] & op_25_22_d[4'h9];
 
 assign alu_op[ 0] = inst_add_w | inst_addi_w | inst_ld_w | inst_ld_b | inst_st_w
-                    | inst_jirl | inst_bl | inst_pcaddu12i | inst_ld_h;
+                    | inst_jirl | inst_bl | inst_pcaddu12i | inst_ld_h | inst_ld_bu | inst_ld_hu;
 assign alu_op[ 1] = inst_sub_w;
 assign alu_op[ 2] = inst_slt | inst_slti;
 assign alu_op[ 3] = inst_sltu | inst_sltui;
@@ -199,7 +203,7 @@ assign alu_op[11] = inst_lu12i_w;
 //信号
 assign need_ui5  = inst_slli_w | inst_srli_w | inst_srai_w;
 assign need_u12  = inst_andi | inst_ori | inst_xori;
-assign need_si12 = inst_addi_w | inst_ld_w | inst_ld_b | inst_ld_h | inst_st_w | inst_slti | inst_sltui ;
+assign need_si12 = inst_addi_w | inst_ld_w | inst_ld_b | inst_ld_h | inst_ld_bu | inst_ld_hu | inst_st_w | inst_slti | inst_sltui ;
 assign need_si16 = inst_jirl | inst_beq | inst_bne | inst_blt | inst_bge | inst_bltu | inst_bgeu;
 assign need_si20 = inst_lu12i_w | inst_pcaddu12i;
 assign need_si26 = inst_b | inst_bl;
@@ -226,6 +230,8 @@ assign src2_is_imm   = inst_slli_w |
                        inst_ld_w   |
                        inst_ld_b   |
                        inst_ld_h   |
+                       inst_ld_bu   |
+                       inst_ld_hu   |
                        inst_st_w   |
                        inst_lu12i_w|
                        inst_pcaddu12i |
@@ -237,13 +243,15 @@ assign src2_is_imm   = inst_slli_w |
                        inst_jirl   |
                        inst_bl     ;
 
-assign res_from_mem  = inst_ld_w | inst_ld_b | inst_ld_h;   //备战未来（？
-assign load_op       = inst_ld_w | inst_ld_b | inst_ld_h;   //加载指令标志
-assign load_signed = inst_ld_b | inst_ld_w | inst_ld_h;
+assign res_from_mem  = inst_ld_w | inst_ld_b | inst_ld_h | inst_ld_bu | inst_ld_hu;   //备战未来（？
+assign load_op       = inst_ld_w | inst_ld_b | inst_ld_h | inst_ld_bu | inst_ld_hu;   //加载指令标志
+assign load_signed = inst_ld_b | inst_ld_w | inst_ld_h ;
 assign mem_size = inst_ld_b ? `B :
                   inst_ld_w ? `W :
                   inst_st_w ? `W :
                   inst_ld_h ? `H :
+                  inst_ld_hu ? `H :
+                  inst_ld_bu ? `B :
                   0;
 assign dst_is_r1     = inst_bl;
 assign gr_we         = ~inst_st_w & ~inst_beq & ~inst_bne & ~inst_b & ~inst_blt & ~inst_bge & ~inst_bltu & ~inst_bgeu;

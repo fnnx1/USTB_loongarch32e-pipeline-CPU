@@ -61,8 +61,8 @@ module WB_stage(
                              sram_rdata_half1;
 
     wire [31:0] sram_rdata;
-    assign sram_rdata = (mem_size == `B) ? {{24{sram_rdata_byte[7]}}, sram_rdata_byte} :
-                        (mem_size == `H) ? {{16{sram_rdata_half[15]}}, sram_rdata_half} :
+    assign sram_rdata = (mem_size == `B) ? (load_signed ? {{24{sram_rdata_byte[7]}}, sram_rdata_byte} : {24'b0, sram_rdata_byte}) :
+                        (mem_size == `H) ? (load_signed ? {{16{sram_rdata_half[15]}}, sram_rdata_half} : {16'b0, sram_rdata_half}) :
                         data_sram_rdata;
 
     assign ws_to_rf_bus = {ws_valid && ms_to_ws_bus_r[71],  //[38]    load标志
