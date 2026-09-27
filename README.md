@@ -52,3 +52,6 @@ WARNING: Too many words specified in data file ../../../../../../../../func/obj/
 
 #### blt
 - 已实现
+
+#### bge
+- 已实现
