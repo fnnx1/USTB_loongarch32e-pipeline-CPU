@@ -33,24 +33,9 @@ module EX_stage(
         if (ds_to_es_valid && es_allowin) begin
             ds_to_es_bus_r <= ds_to_es_bus;
         end
-        else begin
-            ds_to_es_bus_r <= 0;
-        end
     end
-    /*assign ds_to_es_bus = {alu_op       ,  //[151:140] 12 bit
-                       load_op      ,  //[139]      1 bit
-                       src1_is_pc   ,  //[138]      1 bit
-                       src2_is_imm  ,  //[137]      1 bit
-                       src2_is_4    ,  //[136]      1 bit
-                       gr_we        ,  //[135]      1 bit
-                       mem_we       ,  //[134]      1 bit
-                       dest         ,  //[133:129]  5 bit
-                       imm          ,  //[128: 97] 32 bit
-                       rj_value     ,  //[ 96: 65] 32 bit   //第一个操作数的值
-                       rkd_value    ,  //[ 64: 33] 32 bit   //第二个操作数的值，有可能作为地址
-                       ds_pc        ,  //[ 32:  1] 32 bit
-                       res_from_mem    //[  0]      1 bit
-                      };*/
+
+    wire inst_div_w;
     wire load_signed;
     wire [1:0] mem_size;
     wire [11:0] alu_op;
@@ -69,6 +54,7 @@ module EX_stage(
     wire        res_from_mem;
 
     assign {
+            inst_div_w,
             load_signed,
             mem_size,
             alu_op,
@@ -98,6 +84,25 @@ module EX_stage(
         .alu_result(alu_result)
     );
 
+
+    wire dividend_valid = inst_div_w;
+    wire divisor_valid = inst_div_w;
+    wire dividend_ready;
+    wire divisor_ready;
+    wire [31:0] div_result;
+    wire div_result_valid;
+    /*div_gen_0 u_div_gen_0 (
+         .aclk                    (clk),
+         .aresetn                 (resetn),
+         .s_axis_dividend_tdata   (alu_src1),
+         .s_axis_dividend_tvalid  (dividend_valid),
+         .s_axis_dividend_tready  (dividend_ready),   // output
+         .s_axis_divisor_tdata    (alu_src2),
+         .s_axis_divisor_tvalid   (divisor_valid),
+         .s_axis_divisor_tready   (divisor_ready),    // output
+         .m_axis_dout_tdata       (div_result),       // output
+         .m_axis_dout_tvalid      (div_result_valid)  // output
+    );*/
 
     assign es_to_ms_bus = {
                         load_signed,  //[107]     1 bit   加载的数据是否要进行有符号扩展

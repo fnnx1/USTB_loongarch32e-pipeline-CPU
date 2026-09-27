@@ -47,9 +47,6 @@ module MEM_stage(
         if (es_to_ms_valid && ms_allowin) begin
             es_to_ms_bus_r <= es_to_ms_bus;
         end
-        else begin
-            es_to_ms_bus_r <= 0;
-        end
     end
     wire         mem_we, gr_we,res_from_mem, load_op, load_signed;
     wire [1:0] mem_size ,mem_addr_offset;

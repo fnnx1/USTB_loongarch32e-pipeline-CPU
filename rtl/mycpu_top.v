@@ -30,7 +30,7 @@ module mycpu_top(
     wire reset;
     assign reset = ~resetn; //复位信号
     wire        ds_allowin, es_allowin, ms_allowin, ws_allowin;
-    wire        fs_to_ds_valid, ds_to_es_valid, es_to_ms_valid, ms_to_ws_valid;
+    wire        fs_to_ds_valid, ds_to_es_valid, es_to_ms_valid, ms_to_ws_valid, ws_valid;
 
     wire [`BR_BUS_WD       -1:0] br_bus;
     wire [`FS_TO_DS_BUS_WD -1:0] fs_to_ds_bus;
@@ -74,7 +74,10 @@ module mycpu_top(
         .ws_to_rf_bus(ws_to_rf_bus),
         .es_to_ms_bus(es_to_ms_bus),
         .es_dest({es_to_ms_bus[98],es_to_ms_bus[104:99], es_to_ms_bus[63:32]}),
-        .ms_dest({ms_to_ws_bus[71],ms_to_ws_bus[70:65], ms_to_ws_bus[63:32]})
+        .ms_dest({ms_to_ws_bus[71],ms_to_ws_bus[70:65], ms_to_ws_bus[63:32]}),
+        .es_to_ms_valid(es_to_ms_valid),
+        .ms_to_ws_valid(ms_to_ws_valid),
+        .ws_to_rf_valid(ws_valid)
     );
 
     EX_stage ex_stage(
@@ -125,6 +128,7 @@ module mycpu_top(
         .debug_wb_rf_we(debug_wb_rf_we),
         .debug_wb_rf_wnum(debug_wb_rf_wnum),
         .debug_wb_rf_wdata(debug_wb_rf_wdata),
-        .data_sram_rdata(data_sram_rdata)
+        .data_sram_rdata(data_sram_rdata),
+        .ws_to_rf_valid(ws_valid)
     );
 endmodule

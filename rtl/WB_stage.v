@@ -15,6 +15,7 @@ module WB_stage(
     output wire [ 3:0] debug_wb_rf_we,
     output wire [ 4:0] debug_wb_rf_wnum,
     output wire [31:0] debug_wb_rf_wdata,
+    input  wire        ws_to_rf_valid,
     input  wire [31:0] data_sram_rdata  //访存数据
 );
     reg ws_valid;
@@ -70,7 +71,7 @@ module WB_stage(
                            ms_to_ws_bus_r[69:65],           //[36:32] 写寄存器地址
                            ms_to_ws_bus_r[64] ? sram_rdata : ms_to_ws_bus_r[63:32]//[31: 0] 写回数据
                           };
-
+    assign ws_to_rf_valid = ws_valid;
     // debug info generate
     assign debug_wb_pc       = ws_valid ? ms_to_ws_bus_r[31:0] : 32'b0;
     assign debug_wb_rf_we    = {4{ws_valid && ms_to_ws_bus_r[70]}};
@@ -87,9 +88,6 @@ module WB_stage(
 
         if (ms_to_ws_valid && ws_allowin) begin
             ms_to_ws_bus_r <= ms_to_ws_bus;
-        end
-        else begin
-            ms_to_ws_bus_r <= 0;
         end
     end
 endmodule
