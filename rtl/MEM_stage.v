@@ -53,8 +53,9 @@ module MEM_stage(
     end
     wire         mem_we, gr_we,res_from_mem, load_op, load_signed;
     wire [1:0] mem_size ,mem_addr_offset;
-    wire [4:0]dest;
-    wire [31:0] rkd_value, alu_result, ds_pc;
+    wire [4:0] dest;
+    wire [31:0] rkd_value, alu_result, ds_pc, sram_wdata;
+    wire [3:0] sram_we;
     assign {
             load_signed,  //load指令
             mem_size,
@@ -71,10 +72,20 @@ module MEM_stage(
             } = es_to_ms_bus_r;
 
     //访存请求只在本级有效时才发出
-    assign data_sram_en    = mem_valid && (mem_we | res_from_mem);
-    assign data_sram_we    = {4{mem_valid && mem_we}};
+    assign data_sram_en    = mem_valid && (mem_we | res_from_mem | load_op);
+
+    assign sram_wdata = mem_size == `B ? {4{rkd_value[7:0]}} :
+                        mem_size == `H ? {2{rkd_value[15:0]}} :
+                        rkd_value;
+    assign sram_we    = mem_size == `B ? (alu_result[1:0] == 2'b00 ? 4'b0001 :
+                                         alu_result[1:0] == 2'b01 ? 4'b0010 :
+                                         alu_result[1:0] == 2'b10 ? 4'b0100 :
+                                         4'b1000) :
+                        mem_size == `H ? (alu_result[1] == 1'b0 ? 4'b0011 : 4'b1100):
+                        4'b1111;
     assign data_sram_addr  = alu_result;
-    assign data_sram_wdata = rkd_value;
+    assign data_sram_wdata = sram_wdata;
+    assign data_sram_we    = (mem_valid & mem_we) ? sram_we : 4'b0;
 
     assign mem_addr_offset = alu_result[1:0];   //内存地址的偏移量
     // ms_to_ws_bus 总位宽 = 1+5+32+32 = 70 bit
