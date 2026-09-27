@@ -64,3 +64,4 @@ WARNING: Too many words specified in data file ../../../../../../../../func/obj/
 - 已实现
 
 #### xori
+- 已实现
