@@ -34,7 +34,7 @@ wire [31:0] ds_inst;
 reg         ds_valid;
 wire        ds_ready_go;
 
-wire [11:0] alu_op;
+wire [14:0] alu_op;
 
 wire load_signed;  //加载的数据是否要进行有符号扩展
 wire [1:0] mem_size;  //内存写入/读取的数据大小
@@ -115,6 +115,9 @@ wire        inst_st_b;
 wire        inst_st_h;
 wire        inst_div_w;
 wire        inst_div_wu;
+wire        inst_mul_w;
+wire        inst_mulh_w;
+wire        inst_mulh_wu;
 
 wire        need_ui5;
 wire        need_si12;
@@ -195,6 +198,9 @@ assign inst_st_b   = op_31_26_d[6'h0a] & op_25_22_d[4'h4];
 assign inst_st_h   = op_31_26_d[6'h0a] & op_25_22_d[4'h5];
 assign inst_div_w  = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & op_19_15_d[5'h0];
 assign inst_div_wu = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & op_19_15_d[5'h2];
+assign inst_mul_w    = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h18];
+assign inst_mulh_w  = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h19];
+assign inst_mulh_wu = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h1a];
 
 assign alu_op[ 0] = inst_add_w | inst_addi_w | inst_ld_w | inst_ld_b | inst_st_w | inst_st_b | inst_st_h
                     | inst_jirl | inst_bl | inst_pcaddu12i | inst_ld_h | inst_ld_bu | inst_ld_hu;
@@ -209,6 +215,9 @@ assign alu_op[ 8] = inst_slli_w | inst_sll_w ;
 assign alu_op[ 9] = inst_srli_w | inst_srl_w;
 assign alu_op[10] = inst_srai_w | inst_sra_w ;
 assign alu_op[11] = inst_lu12i_w;
+assign alu_op[12] = inst_mul_w;
+assign alu_op[13] = inst_mulh_w;
+assign alu_op[14] = inst_mulh_wu;
 
 //信号
 assign need_ui5  = inst_slli_w | inst_srli_w | inst_srai_w;
@@ -337,13 +346,13 @@ assign {ds_inst,
         rf_wdata //31:0
        } = ws_to_rf_bus;*/
 
-// ds_to_es_bus 总位宽 = 1+1+1+2+12+1+1+1+1+1+1+5+32+32+32+32+1 = 157 bit
+// ds_to_es_bus 总位宽 = 1+1+1+2+15+1+1+1+1+1+1+5+32+32+32+32+1 = 160 bit
 assign ds_to_es_bus = {
-                        inst_div_wu,   //[156]     1  bit
-                        inst_div_w,   //[155]     1  bit
-                        load_signed,  //[154]     1  bit
-                        mem_size     ,  //[153:152] 2  bit
-                        alu_op       ,  //[151:140] 12 bit
+                        inst_div_wu,   //[159]     1  bit
+                        inst_div_w,   //[158]     1  bit
+                        load_signed,  //[157]     1  bit
+                        mem_size     ,  //[156:155] 2  bit
+                        alu_op       ,  //[154:140] 15 bit
                         load_op      ,  //[139]      1 bit
                         src1_is_pc   ,  //[138]      1 bit
                         src2_is_imm  ,  //[137]      1 bit

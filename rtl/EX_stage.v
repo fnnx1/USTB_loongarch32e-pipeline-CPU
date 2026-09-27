@@ -38,7 +38,7 @@ module EX_stage(
     wire inst_div_w;
     wire load_signed;
     wire [1:0] mem_size;
-    wire [11:0] alu_op;
+    wire [14:0] alu_op;
     wire load_op;
     wire ex_gr_we;
     wire [4:0] dest;
@@ -113,7 +113,7 @@ module EX_stage(
             div_input_sent <= 1'b0;
         end
         else if (div_input_fire) begin
-            div_input_sent <= 1'b1;
+            div_input_sent <= 1'b1; // 当除法输入完成握手后，置div_input_sent为1,置valid为0
         end
     end
 
