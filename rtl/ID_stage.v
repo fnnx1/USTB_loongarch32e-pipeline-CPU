@@ -234,12 +234,10 @@ wire ws_match_rkd = ws_to_rf_bus[37] && (ws_to_rf_bus[36:32] == rf_raddr2) && (r
 
 assign rj_value = (es_match_rj && !es_dest[38]) ? es_dest[31:0] :
                   (ms_match_rj && !ms_dest[38]) ? ms_dest[31:0] :
-                  (ws_match_rj && !ws_to_rf_bus[38]) ? ws_to_rf_bus[31:0] :
-                  rf_rdata1;
+                  ws_match_rj ? ws_to_rf_bus[31:0] : rf_rdata1;
 assign rkd_value = (es_match_rkd && !es_dest[38]) ? es_dest[31:0] :
                    (ms_match_rkd && !ms_dest[38]) ? ms_dest[31:0] :
-                   (ws_match_rkd && !ws_to_rf_bus[38]) ? ws_to_rf_bus[31:0] :
-                   rf_rdata2;
+                   ws_match_rkd ? ws_to_rf_bus[31:0] : rf_rdata2;
 
 assign rj_eq_rd = (rj_value == rkd_value);
 assign br_taken = (  inst_beq  &&  rj_eq_rd
@@ -280,8 +278,7 @@ assign ds_to_es_bus = {alu_op       ,  //[151:140] 12 bit
 
 wire es_load_hazard = es_dest[38] && (es_match_rj || es_match_rkd);
 wire ms_load_hazard = ms_dest[38] && (ms_match_rj || ms_match_rkd);
-wire ws_load_hazard = ws_to_rf_bus[38] && (ws_match_rj || ws_match_rkd);    
-wire load_data_hazard = es_load_hazard || ms_load_hazard || ws_load_hazard;
+wire load_data_hazard = es_load_hazard || ms_load_hazard;
 assign ds_ready_go = reset || !load_data_hazard;
 // 是否是写指令，且是否寄存器值相等
 assign ds_allowin      = !ds_valid || ds_ready_go && es_allowin;
