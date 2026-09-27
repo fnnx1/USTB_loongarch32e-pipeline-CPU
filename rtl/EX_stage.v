@@ -18,7 +18,6 @@ module EX_stage(
     reg [`DS_TO_ES_BUS_WD -1 :0] ds_to_es_bus_r;
     wire es_ready_go;
 
-    assign es_ready_go    = 1'b1;
     assign es_allowin      = !es_valid || es_ready_go && ms_allowin;
     assign es_to_ms_valid  = es_valid && es_ready_go;
     always @(posedge clk) begin
@@ -43,6 +42,7 @@ module EX_stage(
     wire ex_gr_we;
     wire [4:0] dest;
     wire [31:0] alu_result;
+    wire [31:0] final_result;
     wire        src1_is_pc;
     wire        src2_is_imm;
     wire        src2_is_4;
@@ -84,16 +84,35 @@ module EX_stage(
         .alu_result(alu_result)
     );
 
-
-    wire dividend_valid = inst_div_w;
-    wire divisor_valid = inst_div_w;
+    
+    wire dividend_valid;
+    wire divisor_valid;
     wire dividend_ready;
     wire divisor_ready;
-    wire [31:0] div_result;
+    wire [63:0] div_result;
     wire div_result_valid;
-    /*div_gen_0 u_div_gen_0 (
+
+    reg div_input_sent;     //用于置valid为0
+    wire div_input_fire;    //是否完成握手
+    assign div_input_fire = dividend_valid && dividend_ready
+                        && divisor_valid  && divisor_ready;
+    always @(posedge clk) begin
+        if (reset) begin
+            div_input_sent <= 1'b0;
+        end
+        else if (es_allowin) begin
+            // 当前 EX 指令离开，或 EX 接收一条新指令；
+            div_input_sent <= 1'b0;
+        end
+        else if (div_input_fire) begin
+            div_input_sent <= 1'b1;
+        end
+    end
+
+    assign dividend_valid = es_valid && inst_div_w && !div_input_sent;
+    assign divisor_valid  = es_valid && inst_div_w && !div_input_sent;
+    div_gen_0 u_div_gen_0 (
          .aclk                    (clk),
-         .aresetn                 (resetn),
          .s_axis_dividend_tdata   (alu_src1),
          .s_axis_dividend_tvalid  (dividend_valid),
          .s_axis_dividend_tready  (dividend_ready),   // output
@@ -102,8 +121,10 @@ module EX_stage(
          .s_axis_divisor_tready   (divisor_ready),    // output
          .m_axis_dout_tdata       (div_result),       // output
          .m_axis_dout_tvalid      (div_result_valid)  // output
-    );*/
+    );
 
+    assign es_ready_go = !inst_div_w || div_result_valid;
+    assign final_result = inst_div_w ? div_result[63:32] : alu_result;
     assign es_to_ms_bus = {
                         load_signed,  //[107]     1 bit   加载的数据是否要进行有符号扩展
                         mem_size,    //[106:105] 2 bit   内存写入/读取的数据大小    
@@ -115,7 +136,7 @@ module EX_stage(
 
                         mem_we       ,  //[ 96]     1 bit   写内存使能
                         rkd_value    ,  //[ 95: 64] 32 bit  写内存数据
-                        alu_result   ,  //[ 63: 32] 32 bit  alu计算结果
+                        final_result   ,  //[ 63: 32] 32 bit  alu计算结果
                         ds_pc           //[ 31:  0] 32 bit  当前指令的pc,用于debug
                         };
 endmodule

@@ -61,3 +61,7 @@ WARNING: Too many words specified in data file ../../../../../../../../func/obj/
 - 修复了wb阶段没记录load_signed的问题，已实现
 #### st.w
 - 实现了一个写入的框架，初步测试应该没问题，至少能跑到报错的位置
+
+### lab5
+#### div.w
+- 已实现除法框架
