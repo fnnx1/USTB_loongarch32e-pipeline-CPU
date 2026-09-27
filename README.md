@@ -55,3 +55,5 @@ WARNING: Too many words specified in data file ../../../../../../../../func/obj/
 ### lab4
 #### ld.b
 1. 实现了一个ld字节选框架，并通过了ld.b那块的测试
+#### ld.h
+- 已实现
