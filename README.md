@@ -49,3 +49,6 @@ WARNING: Too many words specified in data file ../../../../../../../../func/obj/
 2. 实际并非，其实是每次更换obj后还要重新生成一次inst_ram，否则inst_ram会存储原来的旧数据。但gettrace生成的golden_trace是新的
 -  Reset Output Products + Generate Output Products
 3. 添加算术逻辑运算类指令 slti、sltui、andi、ori、xori、sll、srl、sra、pcaddu12i(已达成)
+
+#### blt
+- 已实现
