@@ -48,20 +48,4 @@ WARNING: Too many words specified in data file ../../../../../../../../func/obj/
 1. bl，似乎第一个要实现的指令是这个
 2. 实际并非，其实是每次更换obj后还要重新生成一次inst_ram，否则inst_ram会存储原来的旧数据。但gettrace生成的golden_trace是新的
 -  Reset Output Products + Generate Output Products
-#### pcaddu12i
-- 已实现
-
-#### slti
-- 已实现
-
-#### sltui
-- 已实现
-
-#### andi
-- 已实现
-
-#### ori
-- 已实现
-
-#### xori
-- 已实现
+3. 添加算术逻辑运算类指令 slti、sltui、andi、ori、xori、sll、srl、sra、pcaddu12i(已达成)
