@@ -65,3 +65,5 @@ WARNING: Too many words specified in data file ../../../../../../../../func/obj/
 ### lab5
 #### div.w
 - 已实现除法框架
+#### div.wu
+- 已完成除法

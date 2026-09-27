@@ -114,6 +114,7 @@ wire        inst_ld_hu;
 wire        inst_st_b;
 wire        inst_st_h;
 wire        inst_div_w;
+wire        inst_div_wu;
 
 wire        need_ui5;
 wire        need_si12;
@@ -193,6 +194,7 @@ assign inst_ld_hu  = op_31_26_d[6'h0a] & op_25_22_d[4'h9];
 assign inst_st_b   = op_31_26_d[6'h0a] & op_25_22_d[4'h4];
 assign inst_st_h   = op_31_26_d[6'h0a] & op_25_22_d[4'h5];
 assign inst_div_w  = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & op_19_15_d[5'h0];
+assign inst_div_wu = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & op_19_15_d[5'h2];
 
 assign alu_op[ 0] = inst_add_w | inst_addi_w | inst_ld_w | inst_ld_b | inst_st_w | inst_st_b | inst_st_h
                     | inst_jirl | inst_bl | inst_pcaddu12i | inst_ld_h | inst_ld_bu | inst_ld_hu;
@@ -335,8 +337,9 @@ assign {ds_inst,
         rf_wdata //31:0
        } = ws_to_rf_bus;*/
 
-// ds_to_es_bus 总位宽 = 1+1+2+12+1+1+1+1+1+1+5+32+32+32+32+1 = 156 bit
+// ds_to_es_bus 总位宽 = 1+1+1+2+12+1+1+1+1+1+1+5+32+32+32+32+1 = 157 bit
 assign ds_to_es_bus = {
+                        inst_div_wu,   //[156]     1  bit
                         inst_div_w,   //[155]     1  bit
                         load_signed,  //[154]     1  bit
                         mem_size     ,  //[153:152] 2  bit

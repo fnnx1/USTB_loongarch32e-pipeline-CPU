@@ -34,6 +34,7 @@ module EX_stage(
         end
     end
 
+    wire inst_div_wu;
     wire inst_div_w;
     wire load_signed;
     wire [1:0] mem_size;
@@ -54,6 +55,7 @@ module EX_stage(
     wire        res_from_mem;
 
     assign {
+            inst_div_wu,
             inst_div_w,
             load_signed,
             mem_size,
@@ -87,15 +89,21 @@ module EX_stage(
     
     wire dividend_valid;
     wire divisor_valid;
-    wire dividend_ready;
-    wire divisor_ready;
+    wire dividend_ready_signed;
+    wire divisor_ready_signed;
+    wire dividend_ready_unsigned;
+    wire divisor_ready_unsigned;
     wire [63:0] div_result;
     wire div_result_valid;
+    wire [63:0] div_result_unsigned;
+    wire div_result_unsigned_valid;
+    wire [63:0] div_result_signed;
+    wire div_result_signed_valid;
 
     reg div_input_sent;     //用于置valid为0
     wire div_input_fire;    //是否完成握手
-    assign div_input_fire = dividend_valid && dividend_ready
-                        && divisor_valid  && divisor_ready;
+    assign div_input_fire = dividend_valid && (inst_div_w ? dividend_ready_signed : dividend_ready_unsigned)
+                        && divisor_valid  && (inst_div_w ? divisor_ready_signed : divisor_ready_unsigned);
     always @(posedge clk) begin
         if (reset) begin
             div_input_sent <= 1'b0;
@@ -109,22 +117,33 @@ module EX_stage(
         end
     end
 
-    assign dividend_valid = es_valid && inst_div_w && !div_input_sent;
-    assign divisor_valid  = es_valid && inst_div_w && !div_input_sent;
-    div_gen_0 u_div_gen_0 (
+    assign dividend_valid = es_valid && (inst_div_w || inst_div_wu) && !div_input_sent;
+    assign divisor_valid  = es_valid && (inst_div_w || inst_div_wu) && !div_input_sent;
+    div_signed u_div_signed (
          .aclk                    (clk),
          .s_axis_dividend_tdata   (alu_src1),
-         .s_axis_dividend_tvalid  (dividend_valid),
-         .s_axis_dividend_tready  (dividend_ready),   // output
+         .s_axis_dividend_tvalid  (dividend_valid && inst_div_w),
+         .s_axis_dividend_tready  (dividend_ready_signed),   // output
          .s_axis_divisor_tdata    (alu_src2),
-         .s_axis_divisor_tvalid   (divisor_valid),
-         .s_axis_divisor_tready   (divisor_ready),    // output
-         .m_axis_dout_tdata       (div_result),       // output
-         .m_axis_dout_tvalid      (div_result_valid)  // output
+         .s_axis_divisor_tvalid   (divisor_valid && inst_div_w),
+         .s_axis_divisor_tready   (divisor_ready_signed),    // output
+         .m_axis_dout_tdata       (div_result_signed),       // output
+         .m_axis_dout_tvalid      (div_result_signed_valid)  // output
+    );
+    div_unsigned u_div_unsigned (
+         .aclk                    (clk),
+         .s_axis_dividend_tdata   (alu_src1),
+         .s_axis_dividend_tvalid  (dividend_valid && inst_div_wu),
+         .s_axis_dividend_tready  (dividend_ready_unsigned),   // output
+         .s_axis_divisor_tdata    (alu_src2),
+         .s_axis_divisor_tvalid   (divisor_valid && inst_div_wu),
+         .s_axis_divisor_tready   (divisor_ready_unsigned),    // output
+         .m_axis_dout_tdata       (div_result_unsigned),       // output
+         .m_axis_dout_tvalid      (div_result_unsigned_valid)  // output
     );
 
-    assign es_ready_go = !inst_div_w || div_result_valid;
-    assign final_result = inst_div_w ? div_result[63:32] : alu_result;
+    assign es_ready_go = !inst_div_w && !inst_div_wu || (inst_div_w && div_result_signed_valid) || (inst_div_wu && div_result_unsigned_valid);
+    assign final_result = inst_div_w ? div_result_signed[63:32] : (inst_div_wu ? div_result_unsigned[63:32] : alu_result);
     assign es_to_ms_bus = {
                         load_signed,  //[107]     1 bit   加载的数据是否要进行有符号扩展
                         mem_size,    //[106:105] 2 bit   内存写入/读取的数据大小    
