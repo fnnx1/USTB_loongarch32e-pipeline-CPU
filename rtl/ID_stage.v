@@ -118,6 +118,8 @@ wire        inst_div_wu;
 wire        inst_mul_w;
 wire        inst_mulh_w;
 wire        inst_mulh_wu;
+wire        inst_mod_w;
+wire        inst_mod_wu;
 
 wire        need_ui5;
 wire        need_si12;
@@ -201,6 +203,8 @@ assign inst_div_wu = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & o
 assign inst_mul_w    = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h18];
 assign inst_mulh_w  = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h19];
 assign inst_mulh_wu = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h1a];
+assign inst_mod_w  = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & op_19_15_d[5'h1];
+assign inst_mod_wu = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & op_19_15_d[5'h3];
 
 assign alu_op[ 0] = inst_add_w | inst_addi_w | inst_ld_w | inst_ld_b | inst_st_w | inst_st_b | inst_st_h
                     | inst_jirl | inst_bl | inst_pcaddu12i | inst_ld_h | inst_ld_bu | inst_ld_hu;
@@ -346,8 +350,10 @@ assign {ds_inst,
         rf_wdata //31:0
        } = ws_to_rf_bus;*/
 
-// ds_to_es_bus 总位宽 = 1+1+1+2+15+1+1+1+1+1+1+5+32+32+32+32+1 = 160 bit
+// ds_to_es_bus 总位宽 = 1+1+1+1+1+2+15+1+1+1+1+1+1+5+32+32+32+32+1 = 162 bit
 assign ds_to_es_bus = {
+                        inst_mod_wu,    //[161]     1  bit
+                        inst_mod_w,    //[160]     1  bit
                         inst_div_wu,   //[159]     1  bit
                         inst_div_w,   //[158]     1  bit
                         load_signed,  //[157]     1  bit

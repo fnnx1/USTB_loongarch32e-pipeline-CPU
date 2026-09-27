@@ -69,3 +69,5 @@ WARNING: Too many words specified in data file ../../../../../../../../func/obj/
 - 已完成除法
 #### mul类
 - 已完成乘法（低32位不用区分有无符号）
+#### mod类
+- 已完成取模类
