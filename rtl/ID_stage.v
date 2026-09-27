@@ -102,6 +102,7 @@ wire        inst_srl_w;
 wire        inst_blt;
 wire        inst_bge;
 wire        inst_bltu;
+wire        inst_bgeu;
 
 wire        need_ui5;
 wire        need_si12;
@@ -173,6 +174,7 @@ assign inst_srl_w = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op
 assign inst_blt = op_31_26_d[6'h18];
 assign inst_bge = op_31_26_d[6'h19];
 assign inst_bltu   = op_31_26_d[6'h1a];
+assign inst_bgeu   = op_31_26_d[6'h1b];
 
 assign alu_op[ 0] = inst_add_w | inst_addi_w | inst_ld_w | inst_st_w
                     | inst_jirl | inst_bl | inst_pcaddu12i;
@@ -192,7 +194,7 @@ assign alu_op[11] = inst_lu12i_w;
 assign need_ui5  = inst_slli_w | inst_srli_w | inst_srai_w;
 assign need_u12  = inst_andi | inst_ori | inst_xori;
 assign need_si12 = inst_addi_w | inst_ld_w | inst_st_w | inst_slti | inst_sltui;
-assign need_si16 = inst_jirl | inst_beq | inst_bne | inst_blt | inst_bge | inst_bltu ;
+assign need_si16 = inst_jirl | inst_beq | inst_bne | inst_blt | inst_bge | inst_bltu | inst_bgeu;
 assign need_si20 = inst_lu12i_w | inst_pcaddu12i;
 assign need_si26 = inst_b | inst_bl;
 assign src2_is_4 = inst_jirl | inst_bl;
@@ -208,7 +210,7 @@ assign br_offs = need_si26 ? {{ 4{i26[25]}}, i26[25:0], 2'b0} :
 
 assign jirl_offs = {{14{i16[15]}}, i16[15:0], 2'b0};
 
-assign src_reg_is_rd = inst_beq | inst_bne | inst_st_w | inst_blt | inst_bge | inst_bltu;
+assign src_reg_is_rd = inst_beq | inst_bne | inst_st_w | inst_blt | inst_bge | inst_bltu | inst_bgeu;
 assign src1_is_pc    = inst_jirl | inst_bl | inst_pcaddu12i;
 
 assign src2_is_imm   = inst_slli_w |
@@ -230,7 +232,7 @@ assign src2_is_imm   = inst_slli_w |
 assign res_from_mem  = inst_ld_w;
 assign load_op       = inst_ld_w;   //加载指令标志
 assign dst_is_r1     = inst_bl;
-assign gr_we         = ~inst_st_w & ~inst_beq & ~inst_bne & ~inst_b & ~inst_blt & ~inst_bge & ~inst_bltu;
+assign gr_we         = ~inst_st_w & ~inst_beq & ~inst_bne & ~inst_b & ~inst_blt & ~inst_bge & ~inst_bltu & ~inst_bgeu;
 assign mem_we        = inst_st_w;
 assign dest          = dst_is_r1 ? 5'd1 : rd;
 
@@ -279,11 +281,12 @@ assign br_taken = (  inst_beq  &&  rj_eq_rd
                   || inst_blt  &&  rj_lt_rd
                   || inst_bge  && !rj_lt_rd
                   || inst_bltu &&  rj_ltu_rd
+                  || inst_bgeu && !rj_ltu_rd
                   || inst_jirl
                   || inst_bl
                   || inst_b
                   ) && ds_valid && ds_ready_go;
-assign br_target = (inst_beq || inst_bne || inst_blt || inst_bl || inst_b || inst_bge || inst_bltu) ? (ds_pc + br_offs) :
+assign br_target = (inst_beq || inst_bne || inst_blt || inst_bl || inst_b || inst_bge || inst_bltu || inst_bgeu) ? (ds_pc + br_offs) :
                                                    /*inst_jirl*/ (rj_value + jirl_offs);
 
 assign br_bus = {br_taken , br_target};
