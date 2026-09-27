@@ -47,5 +47,8 @@ WARNING: Too many words specified in data file ../../../../../../../../func/obj/
 ### lab3指令
 1. bl，似乎第一个要实现的指令是这个
 2. 实际并非，其实是每次更换obj后还要重新生成一次inst_ram，否则inst_ram会存储原来的旧数据。但gettrace生成的golden_trace是新的
+-  Reset Output Products + Generate Output Products
 #### pcaddu12i
-- 
+- 已**优雅**实现
+
+#### slti

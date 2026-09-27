@@ -149,9 +149,10 @@ assign inst_bl     = op_31_26_d[6'h15];
 assign inst_beq    = op_31_26_d[6'h16];
 assign inst_bne    = op_31_26_d[6'h17];
 assign inst_lu12i_w= op_31_26_d[6'h05] & ~ds_inst[25];
+assign inst_pcaddu12i = op_31_26_d[6'h07] & ~ds_inst[25];
 
 assign alu_op[ 0] = inst_add_w | inst_addi_w | inst_ld_w | inst_st_w
-                    | inst_jirl | inst_bl;
+                    | inst_jirl | inst_bl | inst_pcaddu12i;
 assign alu_op[ 1] = inst_sub_w;
 assign alu_op[ 2] = inst_slt;
 assign alu_op[ 3] = inst_sltu;
@@ -168,7 +169,7 @@ assign alu_op[11] = inst_lu12i_w;
 assign need_ui5  = inst_slli_w | inst_srli_w | inst_srai_w;
 assign need_si12 = inst_addi_w | inst_ld_w | inst_st_w;
 assign need_si16 = inst_jirl | inst_beq | inst_bne;
-assign need_si20 = inst_lu12i_w;
+assign need_si20 = inst_lu12i_w | inst_pcaddu12i;
 assign need_si26 = inst_b | inst_bl;
 assign src2_is_4 = inst_jirl | inst_bl;
 
@@ -183,7 +184,7 @@ assign br_offs = need_si26 ? {{ 4{i26[25]}}, i26[25:0], 2'b0} :
 assign jirl_offs = {{14{i16[15]}}, i16[15:0], 2'b0};
 
 assign src_reg_is_rd = inst_beq | inst_bne | inst_st_w;
-assign src1_is_pc    = inst_jirl | inst_bl;
+assign src1_is_pc    = inst_jirl | inst_bl | inst_pcaddu12i;
 
 assign src2_is_imm   = inst_slli_w |
                        inst_srli_w |
@@ -192,6 +193,7 @@ assign src2_is_imm   = inst_slli_w |
                        inst_ld_w   |
                        inst_st_w   |
                        inst_lu12i_w|
+                       inst_pcaddu12i |
                        inst_jirl   |
                        inst_bl     ;
 
