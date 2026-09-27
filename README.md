@@ -58,3 +58,6 @@ WARNING: Too many words specified in data file ../../../../../../../../func/obj/
 - 已**优雅**实现
 
 #### andi
+- 已**优雅**实现
+
+#### ori
