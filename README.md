@@ -52,3 +52,4 @@ WARNING: Too many words specified in data file ../../../../../../../../func/obj/
 - 已**优雅**实现
 
 #### slti
+- 已**优雅**实现
