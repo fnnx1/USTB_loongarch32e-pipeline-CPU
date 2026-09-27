@@ -68,7 +68,7 @@ assign slt_result[0]    = (alu_src1[31] & ~alu_src2[31])
 
 // SLTU result
 assign sltu_result[31:1] = 31'b0;
-assign sltu_result[0]    = ~adder_cout;
+assign sltu_result[0]    = ~adder_cout; //是否发生借位
 
 // bitwise operation
 assign and_result = alu_src1 & alu_src2;

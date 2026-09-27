@@ -53,3 +53,8 @@ WARNING: Too many words specified in data file ../../../../../../../../func/obj/
 
 #### slti
 - 已**优雅**实现
+
+#### sltui
+- 已**优雅**实现
+
+#### andi
