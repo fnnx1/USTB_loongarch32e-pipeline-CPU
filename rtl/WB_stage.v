@@ -15,8 +15,8 @@ module WB_stage(
     output wire [ 3:0] debug_wb_rf_we,
     output wire [ 4:0] debug_wb_rf_wnum,
     output wire [31:0] debug_wb_rf_wdata,
-    input  wire        ws_to_rf_valid,
-    input  wire [31:0] data_sram_rdata  //访存数据
+    input  wire        ws_to_rf_valid
+    
 );
     reg ws_valid;
     reg [`MS_TO_WS_BUS_WD -1 :0] ms_to_ws_bus_r;
@@ -36,40 +36,11 @@ module WB_stage(
     //最后一级, 没有下游 allowin
     assign ws_allowin      = !ws_valid || ws_ready_go;
 
-    wire [7:0] sram_rdata_byte0, sram_rdata_byte1, sram_rdata_byte2, sram_rdata_byte3;  //字节选
-    wire [15:0] sram_rdata_half0, sram_rdata_half1;  //半字选
-    wire [7:0] sram_rdata_byte;
-    wire [15:0] sram_rdata_half;
-    wire [1:0] mem_size , mem_addr_offset;  //内存访问的大小和地址偏移量
-    assign mem_size = ms_to_ws_bus_r[73:72];
-    assign mem_addr_offset = ms_to_ws_bus_r[76:75];
-
-    wire load_signed;   //是否要符号扩展
-    assign load_signed = ms_to_ws_bus_r[74];
-
-    assign sram_rdata_byte0 = data_sram_rdata[7:0];
-    assign sram_rdata_byte1 = data_sram_rdata[15:8];
-    assign sram_rdata_byte2 = data_sram_rdata[23:16];
-    assign sram_rdata_byte3 = data_sram_rdata[31:24];
-    assign sram_rdata_half0 = data_sram_rdata[15:0];
-    assign sram_rdata_half1 = data_sram_rdata[31:16];
-
-    assign sram_rdata_byte = mem_addr_offset == 2'b00 ? sram_rdata_byte0 :
-                             mem_addr_offset == 2'b01 ? sram_rdata_byte1 :
-                             mem_addr_offset == 2'b10 ? sram_rdata_byte2 :
-                             sram_rdata_byte3;
-    assign sram_rdata_half = mem_addr_offset[1] == 1'b0 ? sram_rdata_half0 :
-                             sram_rdata_half1;
-
-    wire [31:0] sram_rdata;
-    assign sram_rdata = (mem_size == `B) ? (load_signed ? {{24{sram_rdata_byte[7]}}, sram_rdata_byte} : {24'b0, sram_rdata_byte}) :
-                        (mem_size == `H) ? (load_signed ? {{16{sram_rdata_half[15]}}, sram_rdata_half} : {16'b0, sram_rdata_half}) :
-                        data_sram_rdata;
-
+   
     assign ws_to_rf_bus = {ws_valid && ms_to_ws_bus_r[71],  //[38]    load标志
                            ws_valid && ms_to_ws_bus_r[70],  //[37]    写寄存器使能
                            ms_to_ws_bus_r[69:65],           //[36:32] 写寄存器地址
-                           ms_to_ws_bus_r[64] ? sram_rdata : ms_to_ws_bus_r[63:32]//[31: 0] 写回数据
+                           ms_to_ws_bus_r[63:32]//[31: 0] 写回数据
                           };
     assign ws_to_rf_valid = ws_valid;
     // debug info generate

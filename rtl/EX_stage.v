@@ -11,8 +11,12 @@ module EX_stage(
     input  wire [`DS_TO_ES_BUS_WD -1 :0] ds_to_es_bus,  //上一级缓冲区
     //to ms stage
     output wire        es_to_ms_valid,  //告知下一级数据是否有效
-    output wire [`ES_TO_MS_BUS_WD -1 :0] es_to_ms_bus  //下一级缓冲区
-
+    output wire [`ES_TO_MS_BUS_WD -1 :0] es_to_ms_bus,  //下一级缓冲区
+    //to data sram
+    output wire        data_sram_en,    //数据内存使能
+    output wire [31:0] data_sram_addr,  //访问地址
+    output wire [31:0] data_sram_wdata, //写入数据
+    output wire [3:0]  data_sram_we     //数据内存对应字节访问使能
 );
     reg es_valid;
     reg [`DS_TO_ES_BUS_WD -1 :0] ds_to_es_bus_r;
@@ -55,6 +59,8 @@ module EX_stage(
     wire [31:0] rkd_value;
     wire [31:0] ds_pc;
     wire        res_from_mem;
+    wire [31:0] sram_wdata;
+    wire [3:0] sram_we;
 
     assign {
             inst_mod_wu,
@@ -147,6 +153,23 @@ module EX_stage(
          .m_axis_dout_tdata       (div_result_unsigned),       // output
          .m_axis_dout_tvalid      (div_result_unsigned_valid)  // output
     );
+
+    assign data_sram_en    = es_valid && (mem_we | res_from_mem | load_op);
+
+    assign sram_wdata = mem_size == `B ? {4{rkd_value[7:0]}} :
+                        mem_size == `H ? {2{rkd_value[15:0]}} :
+                        rkd_value;
+    assign sram_we    = mem_size == `B ? (alu_result[1:0] == 2'b00 ? 4'b0001 :
+                                         alu_result[1:0] == 2'b01 ? 4'b0010 :
+                                         alu_result[1:0] == 2'b10 ? 4'b0100 :
+                                         4'b1000) :
+                        mem_size == `H ? (alu_result[1] == 1'b0 ? 4'b0011 : 4'b1100):
+                        4'b1111;
+    assign data_sram_addr  = alu_result;
+    assign data_sram_wdata = sram_wdata;
+    assign data_sram_we    = (es_valid & mem_we) ? sram_we : 4'b0;
+
+    assign mem_addr_offset = alu_result[1:0];   //内存地址的偏移量
 
     assign es_ready_go = !div_signed && !div_unsigned || (div_signed && div_result_signed_valid) || (div_unsigned && div_result_unsigned_valid);
     assign final_result = div_signed ? (inst_div_w ? div_result_signed[63:32] : (inst_mod_w ? div_result_signed[31:0] : alu_result)) 

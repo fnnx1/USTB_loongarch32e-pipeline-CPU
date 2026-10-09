@@ -91,7 +91,12 @@ module mycpu_top(
         .ds_to_es_bus(ds_to_es_bus),  //上一级缓冲区
         //to ms stage
         .es_to_ms_valid(es_to_ms_valid),  //告知下一级数据是否有效
-        .es_to_ms_bus(es_to_ms_bus)       //下一级缓冲区
+        .es_to_ms_bus(es_to_ms_bus),       //下一级缓冲区
+        // to data sram
+        .data_sram_en(data_sram_en),
+        .data_sram_addr(data_sram_addr),
+        .data_sram_wdata(data_sram_wdata),
+        .data_sram_we(data_sram_we)
     );
 
     MEM_stage mem_stage(
@@ -106,11 +111,7 @@ module mycpu_top(
         //to ws stage
         .ms_to_ws_valid(ms_to_ws_valid),  //告知下一级数据是否有效
         .ms_to_ws_bus(ms_to_ws_bus),   //写回缓冲区
-        // data sram interface
-        .data_sram_en(data_sram_en),
-        .data_sram_we(data_sram_we),
-        .data_sram_addr(data_sram_addr),
-        .data_sram_wdata(data_sram_wdata)
+        .data_sram_rdata(data_sram_rdata)
     );
 
     WB_stage wb_stage(
@@ -128,7 +129,6 @@ module mycpu_top(
         .debug_wb_rf_we(debug_wb_rf_we),
         .debug_wb_rf_wnum(debug_wb_rf_wnum),
         .debug_wb_rf_wdata(debug_wb_rf_wdata),
-        .data_sram_rdata(data_sram_rdata),
         .ws_to_rf_valid(ws_valid)
     );
 endmodule
