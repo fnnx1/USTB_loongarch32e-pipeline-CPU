@@ -39,6 +39,47 @@ module mycpu_top(
     wire [`MS_TO_WS_BUS_WD -1:0] ms_to_ws_bus;
     wire [`WS_TO_RF_BUS_WD -1:0] ws_to_rf_bus;
 
+
+    wire        csr_re;     //读使能
+    wire [11:0] csr_num;    //写寄存器地址
+    wire        csr_we;     //写使能
+    wire [31:0] csr_wmask;  //写掩码
+    wire [31:0] csr_wvalue; //写入值
+    wire [31:0] csr_rvalue; //读出值
+
+    wire [31:0] ex_entry;   //异常入口地址 
+    wire        has_inst;   //是否有指令
+    wire        ertn_flush; //异常返回刷新信号
+    wire        wb_ex;      //写回阶段异常信号
+    wire [5:0]  wb_ecode;   //写回阶段异常码
+    wire [8:0]  wb_esubcode; //写回阶段异常子码
+    wire [31:0] wb_pc;      //写回阶段异常发生的PC
+    wire [31:0] wb_vaddr;   //写回阶段异常相关虚地址
+
+    wire [7:0]  hw_int_in;  //硬件中断输入
+    wire        ipi_int_in; //IPI中断输入 ioctl
+    wire        coreid_in;  //核心ID输入
+    csr _csr(
+        .clk(clk),
+        .reset(reset),
+        .csr_re(csr_re),
+        .csr_num(csr_num),
+        .csr_we(csr_we),
+        .csr_wmask(csr_wmask),
+        .csr_wvalue(csr_wvalue),
+        .csr_rvalue(csr_rvalue),
+        .hw_int_in(hw_int_in),
+        .ipi_int_in(ipi_int_in),
+        .ex_entry(ex_entry),
+        .has_inst(has_inst),
+        .ertn_flush(ertn_flush),
+        .wb_ex(wb_ex),
+        .wb_ecode(wb_ecode),
+        .wb_esubcode(wb_esubcode),
+        .wb_pc(wb_pc),
+        .wb_vaddr(wb_vaddr),
+        .coreid_in(coreid_in)
+    );
     // 取指
     IF_stage if_stage(
         .clk(clk), //时钟
