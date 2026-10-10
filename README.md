@@ -74,3 +74,4 @@ WARNING: Too many words specified in data file ../../../../../../../../func/obj/
 
 ### lab6
 1. 首先先修改了框架，现在会在ex阶段发送访址请求，然后在ms阶段接收到访存数据。这样可以使load_use情况快一个周期
+2. 定义了csr模块。接下来的工作是实例化
