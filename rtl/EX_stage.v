@@ -30,7 +30,6 @@ module EX_stage(
     //CSR相关信号
     wire [11:0] csr_write_num;
     wire [31:0] csr_wmask;
-    wire csr_xchg;
     wire csr_we;
     wire [31:0] _csr_rdata; //交换前
     wire [31:0] csr_wdata; //交换后
@@ -82,7 +81,6 @@ module EX_stage(
     assign {
             csr_write_num,
             csr_wmask,
-            csr_xchg,
             csr_we,
             _csr_rdata,
             ds_ex,
@@ -201,13 +199,12 @@ module EX_stage(
     assign div_mod_result = div_signed ? (inst_div_w ? div_result_signed[63:32] : (inst_mod_w ? div_result_signed[31:0] : alu_result)) 
                         : (div_unsigned ? (inst_div_wu ? div_result_unsigned[63:32] : (inst_mod_wu ? div_result_unsigned[31:0] : alu_result)) : alu_result);
     //csrxchange交换逻辑
-    assign final_result = csr_xchg ? _csr_rdata : div_mod_result;
-    assign csr_wdata = csr_xchg ? rkd_value : 32'h0;  
-    // es_to_ms_bus 总位宽 = 202 bit
+    assign final_result = csr_we ? _csr_rdata : div_mod_result;
+    assign csr_wdata = csr_we ? rkd_value : 32'h0;
+    // es_to_ms_bus 总位宽 = 201 bit
     assign es_to_ms_bus = {
-                        csr_write_num ,  //[201:190] 12 bit  CSR写地址
-                        csr_wmask    ,  //[189:158] 32 bit  CSR写掩码
-                        csr_xchg      ,  //[157]      1 bit
+                        csr_write_num ,  //[200:189] 12 bit  CSR写地址
+                        csr_wmask    ,  //[188:157] 32 bit  CSR写掩码
                         csr_we        ,  //[156]      1 bit
                         csr_wdata     ,  //[155:124] 32 bit
                         es_ex,        //[123]     1  bit
