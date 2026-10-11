@@ -16,14 +16,31 @@ module ID_stage(
     output wire [`BR_BUS_WD -1 : 0 ] br_bus,    //跳转信号
     //to rf :write back
     input  wire [`WS_TO_RF_BUS_WD -1 :0] ws_to_rf_bus,   //写回缓冲区
+
     //处理冲突
     input wire  [`ES_TO_MS_BUS_WD -1 :0] es_to_ms_bus,   //来自es阶段的冲突信号
     input wire  [38 : 0] es_dest,   //load_op , gr_we , dest[5] , data[32]
     input wire  [38 : 0] ms_dest,
     input wire  es_to_ms_valid,
     input wire  ms_to_ws_valid,
-    input wire  ws_to_rf_valid
+    input wire  ws_to_rf_valid,
+
+    output wire csr_re,
+    output wire [11:0] csr_raddr,
+    input  wire [31:0] csr_rdata
 );
+
+// 异常处理
+wire        if_ex;
+wire [5:0] if_ecode;
+wire [8:0] if_esubcode;
+wire        ds_ex;
+wire [5:0] ds_excode;
+wire [8:0] ds_esubcode;
+//待补充
+assign ds_ex = if_ex;
+assign ds_excode = if_ecode;
+assign ds_esubcode = if_esubcode;
 
 wire br_taken;
 wire [31:0] br_target;
@@ -54,8 +71,14 @@ wire [31:0]imm;
 wire [31:0]br_offs;
 wire [31:0]jirl_offs;
 
+wire csr_we;
+wire csr_xchg;
+wire [11:0] csr_write_num;
+wire [31:0] csr_wmask;
+
 //分段
 wire [5:0] op_31_26;
+wire [1:0] op_25_24;
 wire [3:0] op_25_22;
 wire [ 1:0] op_21_20;
 wire [ 4:0] op_19_15;
@@ -70,6 +93,7 @@ wire [15:0] i16;
 wire [25:0] i26;
 
 wire [63:0] op_31_26_d;
+wire [3:0] op_25_24_d;
 wire [15:0] op_25_22_d;
 wire [ 3:0] op_21_20_d;
 wire [31:0] op_19_15_d;
@@ -141,6 +165,7 @@ wire [31:0] mem_result;
 wire [31:0] final_result;
 
 assign op_31_26  = ds_inst[31:26];
+assign op_25_24  = ds_inst[25:24];
 assign op_25_22  = ds_inst[25:22];
 assign op_21_20  = ds_inst[21:20];
 assign op_19_15  = ds_inst[19:15];
@@ -155,6 +180,7 @@ assign i16  = ds_inst[25:10];
 assign i26  = {ds_inst[ 9: 0], ds_inst[25:10]};
 
 decoder_6_64 u_dec0(.in(op_31_26 ), .out(op_31_26_d ));
+decoder_2_4  u_dec4(.in(op_25_24 ), .out(op_25_24_d ));
 decoder_4_16 u_dec1(.in(op_25_22 ), .out(op_25_22_d ));
 decoder_2_4  u_dec2(.in(op_21_20 ), .out(op_21_20_d ));
 decoder_5_32 u_dec3(.in(op_19_15 ), .out(op_19_15_d ));
@@ -205,6 +231,8 @@ assign inst_mulh_w  = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & 
 assign inst_mulh_wu = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h1a];
 assign inst_mod_w  = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & op_19_15_d[5'h1];
 assign inst_mod_wu = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & op_19_15_d[5'h3];
+//特权级
+assign inst_csrxchg = op_31_26_d[6'h01] & op_25_24_d[2'h0] & ds_inst[9:5] != 5'h0 & ds_inst[9:5] != 5'h1;
 
 assign alu_op[ 0] = inst_add_w | inst_addi_w | inst_ld_w | inst_ld_b | inst_st_w | inst_st_b | inst_st_h
                     | inst_jirl | inst_bl | inst_pcaddu12i | inst_ld_h | inst_ld_bu | inst_ld_hu;
@@ -244,7 +272,8 @@ assign br_offs = need_si26 ? {{ 4{i26[25]}}, i26[25:0], 2'b0} :
 
 assign jirl_offs = {{14{i16[15]}}, i16[15:0], 2'b0};
 
-assign src_reg_is_rd = inst_beq | inst_bne | inst_st_w | inst_st_b | inst_st_h | inst_blt | inst_bge | inst_bltu | inst_bgeu;
+assign src_reg_is_rd = inst_beq | inst_bne | inst_st_w | inst_st_b | inst_st_h | inst_blt | inst_bge | inst_bltu | inst_bgeu
+                        | inst_csrxchg;
 assign src1_is_pc    = inst_jirl | inst_bl | inst_pcaddu12i;
 
 assign src2_is_imm   = inst_slli_w |
@@ -285,6 +314,13 @@ assign dst_is_r1     = inst_bl;
 assign gr_we         = ~inst_st_w & ~inst_st_b & ~inst_st_h & ~inst_beq & ~inst_bne & ~inst_b & ~inst_blt & ~inst_bge & ~inst_bltu & ~inst_bgeu;
 assign mem_we        = inst_st_w | inst_st_b | inst_st_h;
 assign dest          = dst_is_r1 ? 5'd1 : rd;
+
+assign csr_xchg = inst_csrxchg;
+assign csr_re = inst_csrxchg;
+assign csr_we = inst_csrxchg;
+assign csr_raddr = ds_inst[21:10];
+assign csr_write_num = inst_csrxchg ? csr_raddr : 5'd0;
+assign csr_wmask = inst_csrxchg ? rj_value : 32'h0;
 
 assign rf_raddr1 = rj;
 assign rf_raddr2 = src_reg_is_rd ? rd :rk;
@@ -342,7 +378,11 @@ assign br_target = (inst_beq || inst_bne || inst_blt || inst_bl || inst_b || ins
 assign br_bus = {br_taken , br_target};
 
 reg [`FS_TO_DS_BUS_WD -1 :0] fs_to_ds_bus_r;
-assign {ds_inst,
+assign {
+        if_ex,
+        if_excode,
+        if_esubcode,
+        ds_inst,
         ds_pc} = fs_to_ds_bus_r;
 
 /*assign {rf_we, //37:37
@@ -350,8 +390,17 @@ assign {ds_inst,
         rf_wdata //31:0
        } = ws_to_rf_bus;*/
 
-// ds_to_es_bus 总位宽 = 1+1+1+1+1+2+15+1+1+1+1+1+1+5+32+32+32+32+1 = 162 bit
+// ds_to_es_bus 总位宽 = 257 bit
 assign ds_to_es_bus = {
+                        csr_write_num, //[256:245] 12 bit
+                        csr_wmask,      //[244:213] 32 bit
+                        csr_xchg      ,  //[212]      1 bit
+                        csr_re        ,  //[211]      1 bit
+                        csr_we        ,  //[210]      1 bit
+                        csr_rdata     ,  //[209:178] 32 bit
+                        ds_ex,        //[177]     1  bit
+                        ds_excode,    //[176:171] 6  bit
+                        ds_esubcode,  //[170:162] 9 bit
                         inst_mod_wu,    //[161]     1  bit
                         inst_mod_w,    //[160]     1  bit
                         inst_div_wu,   //[159]     1  bit

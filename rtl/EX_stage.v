@@ -18,6 +18,23 @@ module EX_stage(
     output wire [31:0] data_sram_wdata, //写入数据
     output wire [3:0]  data_sram_we     //数据内存对应字节访问使能
 );
+    //异常处理
+    wire es_ex; //ex阶段的异常信号
+    wire [5:0] es_excode; //ex阶段的异常码
+    wire [8:0] es_esubcode; //ex阶段的异常子码
+    
+    wire ds_ex; //ds阶段的异常信号
+    wire [5:0] ds_excode; //ds阶段的异常码
+    wire [8:0] ds_esubcode; //ds阶段的异常子码
+
+    //CSR相关信号
+    wire [11:0] csr_write_num;
+    wire [31:0] csr_wmask;
+    wire csr_xchg;
+    wire csr_re;
+    wire csr_we;
+    wire [31:0] _csr_rdata; //交换前
+    wire [31:0] csr_wdata; //交换后
     reg es_valid;
     reg [`DS_TO_ES_BUS_WD -1 :0] ds_to_es_bus_r;
     wire es_ready_go;
@@ -50,6 +67,7 @@ module EX_stage(
     wire [4:0] dest;
     wire [31:0] alu_result;
     wire [31:0] final_result;
+    wire [31:0] mul_result;
     wire        src1_is_pc;
     wire        src2_is_imm;
     wire        src2_is_4;
@@ -63,6 +81,15 @@ module EX_stage(
     wire [3:0] sram_we;
 
     assign {
+            csr_write_num,
+            csr_wmask,
+            csr_xchg,
+            csr_re,
+            csr_we,
+            _csr_rdata,
+            ds_ex,
+            ds_excode,
+            ds_esubcode,
             inst_mod_wu,
             inst_mod_w,
             inst_div_wu,
@@ -172,9 +199,23 @@ module EX_stage(
     assign mem_addr_offset = alu_result[1:0];   //内存地址的偏移量
 
     assign es_ready_go = !div_signed && !div_unsigned || (div_signed && div_result_signed_valid) || (div_unsigned && div_result_unsigned_valid);
-    assign final_result = div_signed ? (inst_div_w ? div_result_signed[63:32] : (inst_mod_w ? div_result_signed[31:0] : alu_result)) 
+    wire [31:0] div_mod_result;
+    assign div_mod_result = div_signed ? (inst_div_w ? div_result_signed[63:32] : (inst_mod_w ? div_result_signed[31:0] : alu_result)) 
                         : (div_unsigned ? (inst_div_wu ? div_result_unsigned[63:32] : (inst_mod_wu ? div_result_unsigned[31:0] : alu_result)) : alu_result);
+    //csrxchange交换逻辑
+    assign final_result = csr_xchg ? _csr_rdata : div_mod_result;
+    assign csr_wdata = csr_xchg ? rkd_value : 32'h0;  
+    // es_to_ms_bus 总位宽 = 203 bit
     assign es_to_ms_bus = {
+                        csr_write_num ,  //[202:191] 12 bit  CSR写地址
+                        csr_wmask    ,  //[190:159] 32 bit  CSR写掩码
+                        csr_xchg      ,  //[158]      1 bit
+                        csr_re        ,  //[157]      1 bit
+                        csr_we        ,  //[156]      1 bit
+                        csr_wdata     ,  //[155:124] 32 bit
+                        es_ex,        //[123]     1  bit
+                        es_excode,    //[122:117] 6  bit
+                        es_esubcode,  //[116:108] 9 bit
                         load_signed,  //[107]     1 bit   加载的数据是否要进行有符号扩展
                         mem_size,    //[106:105] 2 bit   内存写入/读取的数据大小    
                         ex_gr_we     ,  //[104]     1 bit   写寄存器使能

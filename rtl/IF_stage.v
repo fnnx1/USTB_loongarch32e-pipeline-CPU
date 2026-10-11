@@ -14,6 +14,15 @@ module IF_stage(
     output wire [31:0] inst_sram_wdata,
     input  wire [31:0] inst_sram_rdata
 );
+    //异常处理
+    wire if_ex; //if阶段的异常信号
+    wire [5:0] if_ecode; //if阶段的异常码
+    wire [8:0] if_esubcode; //if阶段的异常子码
+
+    assign if_ex = 1'b0; //暂时没有异常处理
+    assign if_ecode = 6'b0;
+    assign if_esubcode = 9'b0;
+
 
     //if级握手信号
     reg         fs_valid;
@@ -33,7 +42,12 @@ module IF_stage(
     reg [31:0] fs_pc;
 
     //if向id传递的bus
-    assign fs_to_ds_bus = {fs_inst,fs_pc};
+    // fs_to_ds_bus 总位宽 = 1+6+9+32+32 = 80 bit
+    assign fs_to_ds_bus = {if_ex,        // [79]
+                           if_ecode,     // [78:73]
+                           if_esubcode,  // [72:64]
+                           fs_inst,      // [63:32]
+                           fs_pc};       // [31:0]
 
     //pre-if stage
     assign to_fs_valid = ~reset;

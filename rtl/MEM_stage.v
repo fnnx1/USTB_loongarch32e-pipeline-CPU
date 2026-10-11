@@ -15,6 +15,26 @@ module MEM_stage(
     //内存访问端口
     input  wire [31:0] data_sram_rdata  //访存数据
 );
+    //异常处理
+    wire mem_ex;
+    wire [5:0] mem_excode;
+    wire [8:0] mem_esubcode;
+
+    wire es_ex;
+    wire [5:0] es_excode;
+    wire [8:0] es_esubcode;
+
+    assign mem_ex = es_ex;
+    assign mem_excode = es_excode;
+    assign mem_esubcode = es_esubcode;
+
+    //CSR相关
+    wire [11:0] csr_write_num;
+    wire [31:0] csr_wmask;
+    wire csr_xchg;
+    wire csr_re;
+    wire csr_we;
+    wire [31:0] csr_wdata;
     reg mem_valid;
     reg [`ES_TO_MS_BUS_WD -1 :0] es_to_ms_bus_r;
     wire ms_ready_go;
@@ -51,6 +71,15 @@ module MEM_stage(
     wire [31:0] rkd_value, alu_result, ds_pc, sram_wdata;
     wire [3:0] sram_we;
     assign {
+            csr_write_num,
+            csr_wmask,
+            csr_xchg,
+            csr_re,
+            csr_we,
+            csr_wdata,
+            es_ex,
+            es_excode,
+            es_esubcode,
             load_signed,  //load指令
             mem_size,
             gr_we,  //写寄存器使能
@@ -111,10 +140,19 @@ module MEM_stage(
     assign data_sram_we    = (mem_valid & mem_we) ? sram_we : 4'b0;
 
     assign mem_addr_offset = alu_result[1:0];   //内存地址的偏移量*/
-    // ms_to_ws_bus 总位宽 = 1+5+32+32 = 70 bit
+    // ms_to_ws_bus 总位宽 = 167 bit
     wire [31:0] final_result;
     assign final_result = (res_from_mem | load_op) ? sram_rdata : alu_result;
     assign ms_to_ws_bus = {
+                            csr_write_num ,  //[166:155] 12 bit  CSR写地址
+                            csr_wmask    ,  //[154:123] 32 bit  CSR写掩码
+                            csr_xchg      ,  //[122]      1 bit
+                            csr_re        ,  //[121]      1 bit
+                            csr_we        ,  //[120]      1 bit
+                            csr_wdata     ,  //[119:88]  32 bit
+                            mem_ex      ,  //[87]     异常标志
+                            mem_excode  ,  //[86:81]  异常码
+                            mem_esubcode,  //[80:72]  异常子码
                             load_op      ,  //[71]     load标志
                             gr_we        ,  //[70]     写寄存器使能
                             dest         ,  //[69:65]  写寄存器地址

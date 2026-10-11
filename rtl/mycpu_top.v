@@ -38,14 +38,23 @@ module mycpu_top(
     wire [`ES_TO_MS_BUS_WD -1:0] es_to_ms_bus;
     wire [`MS_TO_WS_BUS_WD -1:0] ms_to_ws_bus;
     wire [`WS_TO_RF_BUS_WD -1:0] ws_to_rf_bus;
+    wire [`WS_TO_CSR_BUS_WD -1:0] ws_to_csr_bus;
 
 
     wire        csr_re;     //读使能
-    wire [11:0] csr_num;    //写寄存器地址
+    wire [11:0] csr_raddr;  //ID阶段CSR读地址
+    wire [11:0] csr_waddr;  //写回阶段CSR写地址
     wire        csr_we;     //写使能
     wire [31:0] csr_wmask;  //写掩码
     wire [31:0] csr_wvalue; //写入值
     wire [31:0] csr_rvalue; //读出值
+    wire        wb_csr_xchg;
+    wire        wb_csr_re;
+    wire        wb_csr_we;
+
+    assign {csr_waddr, csr_wmask, wb_csr_xchg, wb_csr_re, wb_csr_we,
+            csr_wvalue} = ws_to_csr_bus;
+    assign csr_we = wb_csr_we;
 
     wire [31:0] ex_entry;   //异常入口地址 
     wire        has_inst;   //是否有指令
@@ -63,7 +72,8 @@ module mycpu_top(
         .clk(clk),
         .reset(reset),
         .csr_re(csr_re),
-        .csr_num(csr_num),
+        .csr_raddr(csr_raddr), 
+        .csr_waddr(csr_waddr),
         .csr_we(csr_we),
         .csr_wmask(csr_wmask),
         .csr_wvalue(csr_wvalue),
@@ -111,6 +121,9 @@ module mycpu_top(
         .ds_to_es_bus(ds_to_es_bus),
         //to if stage
         .br_bus(br_bus),
+        .csr_re(csr_re),
+        .csr_raddr(csr_raddr),
+        .csr_rdata(csr_rvalue),
         //to rf :write back
         .ws_to_rf_bus(ws_to_rf_bus),
         .es_to_ms_bus(es_to_ms_bus),
@@ -165,6 +178,7 @@ module mycpu_top(
         .ms_to_ws_bus(ms_to_ws_bus),  //上一级缓冲区
         //to rf :write back
         .ws_to_rf_bus(ws_to_rf_bus),   //写回缓冲区
+        .ws_to_csr_bus(ws_to_csr_bus),
         // trace debug interface
         .debug_wb_pc(debug_wb_pc),
         .debug_wb_rf_we(debug_wb_rf_we),

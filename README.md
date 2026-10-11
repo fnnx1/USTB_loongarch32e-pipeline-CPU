@@ -77,4 +77,5 @@ WARNING: Too many words specified in data file ../../../../../../../../func/obj/
 2. 定义了csr模块。接下来的工作是实例化
 3. 有些先入为主认为跑的程序一定是用户程序了，实际上没人动权限级，初始就是0，所以可以直接对着测试看哪个不对不断补充就可以。而不是按异常顺序来
 4. 按异常顺序支持异常 总线上增加16位，包括ecode，esubcode，ex
+    1. 已实现csrxchange
     

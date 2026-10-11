@@ -1,15 +1,21 @@
 `ifndef MYCPU_DEFINES_VH
 `define MYCPU_DEFINES_VH
 
-    //前递宽度
+    //总线位宽：前递 1+32=33
     `define BR_BUS_WD       33
 
-    //各阶段总线宽度定义
+    //各级总线位宽：FS->DS 1+6+9+32+32=80
     `define FS_TO_DS_BUS_WD 80
-    `define DS_TO_ES_BUS_WD 178
-    `define ES_TO_MS_BUS_WD 124
-    `define MS_TO_WS_BUS_WD 88
-    `define WS_TO_RF_BUS_WD 55
+    //DS->ES 12+32+1+1+1+32+1+6+9+1+1+1+1+1+2+15+1+1+1+1+1+1+5+32+32+32+32+1=257
+    `define DS_TO_ES_BUS_WD 257
+    //ES->MS 12+32+1+1+1+32+1+6+9+1+2+1+5+1+1+1+32+32+32=203
+    `define ES_TO_MS_BUS_WD 203
+    //MS->WS 12+32+1+1+1+32+1+6+9+1+1+5+1+32+32=167
+    `define MS_TO_WS_BUS_WD 167
+    //WS->RF 1+1+1+32+1+6+9+1+1+5+32=90
+    `define WS_TO_RF_BUS_WD 90
+    //WS->CSR 12+32+1+1+1+32=79
+    `define WS_TO_CSR_BUS_WD 79
 
     //访存字节数
     `define B 2'b01
