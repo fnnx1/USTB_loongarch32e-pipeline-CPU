@@ -41,6 +41,9 @@ module EX_stage(
     wire [5:0] ds_excode; //ds阶段的异常码
     wire [8:0] ds_esubcode; //ds阶段的异常子码
 
+    assign es_ex = ds_ex;
+    assign es_excode = ds_excode;
+    assign es_esubcode = ds_esubcode;
     //CSR相关信号
     wire [11:0] csr_write_num;
     wire [31:0] csr_wmask;
@@ -212,7 +215,7 @@ module EX_stage(
                         : (div_unsigned ? (inst_div_wu ? div_result_unsigned[63:32] : (inst_mod_wu ? div_result_unsigned[31:0] : alu_result)) : alu_result);
     //csrxchange交换逻辑
     assign final_result = csr_we ? _csr_rdata : div_mod_result;
-    assign csr_wdata = csr_we ? rkd_value : 32'h0;
+    assign csr_wdata = csr_we ? (es_excode == `ECODE_SYS ? ds_pc + 4 : rkd_value) : 32'h0;
     // es_to_ms_bus 总位宽 = 201 bit
     assign es_to_ms_bus = {
                         csr_write_num ,  //[200:189] 12 bit  CSR写地址

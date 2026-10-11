@@ -41,6 +41,54 @@
     `define ECODE_FPE 6'h0F
     `define ECODE_TLBR 6'h3F
 
+    `define ESUBCODE_SYS 9'h000
     `define ESUBCODE_ADEF 9'h000
     `define ESUBCODE_ADEM 9'h001
+
+    //CSR号及字段位置
+    `define CSR_CRMD 12'h0
+    `define CSR_CRMD_PLV 1:0
+    `define CSR_CRMD_PIE 2
+
+    `define CSR_PRMD 12'h1
+    `define CSR_PRMD_PPLV 1:0
+    `define CSR_PRMD_PIE 2
+
+    `define CSR_ECFG 12'h4
+    `define CSR_ECFG_LIE 12:0
+
+    `define CSR_ESTAT 12'h5
+    `define CSR_ESTAT_IS10 1:0
+    `define CSR_ESTAT_IS98 9:2
+    `define CSR_ESTAT_ECODE 21:16
+    `define CSR_ESTAT_ESUBCODE 30:22
+
+    `define CSR_ERA 12'h6
+    `define CSR_ERA_PC 31:0
+
+    `define CSR_BADV 12'h7
+    `define CSR_BADV_VADDR 31:0
+
+    `define CSR_EENTRY 12'hc
+    `define CSR_EENTRY_VA 31:6
+
+    `define CSR_SAVE0 12'h10
+    `define CSR_SAVE1 12'h11
+    `define CSR_SAVE2 12'h12
+    `define CSR_SAVE3 12'h13
+    `define CSR_SAVE_DATA 31:0
+
+    `define CSR_TID 12'h40
+    `define CSR_TID_TID 31:0
+
+    `define CSR_TCFG 12'h41
+    `define CSR_TCFG_EN 0
+    `define CSR_TCFG_PERIOD 1
+    `define CSR_TCFG_INITV 31:2
+
+    `define CSR_TVAL 12'h42
+    `define CSR_TVAL_TIMEVAL 31:0
+
+    `define CSR_TICLR 12'h44
+    `define CSR_TICLR_CLR 0
 `endif

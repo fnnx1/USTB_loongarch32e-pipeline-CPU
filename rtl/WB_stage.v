@@ -82,6 +82,7 @@ module WB_stage(
     assign ws_ex = ws_valid && ms_to_ws_bus_r[87];
     assign ws_excode = ws_valid ? ms_to_ws_bus_r[86:81] : 6'b0;
     assign ws_esubcode = ws_valid ? ms_to_ws_bus_r[80:72] : 9'b0;
+    
     assign csr_we = ws_valid && ms_to_ws_bus_r[120];
     assign csr_wdata = ms_to_ws_bus_r[119:88];
     assign csr_wmask = ms_to_ws_bus_r[152:121];

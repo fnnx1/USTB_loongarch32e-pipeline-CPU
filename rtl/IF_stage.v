@@ -14,7 +14,7 @@ module IF_stage(
     output wire [31:0] inst_sram_wdata,
     input  wire [31:0] inst_sram_rdata,
 
-    input wire ex_pc,
+    input wire [31:0] ex_pc,
     input wire ex
 );
     //异常状态输入(乒乓判断)
@@ -89,7 +89,7 @@ module IF_stage(
             fs_pc <= 32'h1bfffffc;
         end else if(to_fs_valid && fs_allowin && !ex_flush)begin
             fs_pc <= next_pc;
-        end else begin
+        end else if (ex_flush) begin
             fs_pc <= ex_pc;
         end
     end

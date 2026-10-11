@@ -49,10 +49,6 @@ wire [8:0] if_esubcode;
 wire        ds_ex;
 wire [5:0] ds_excode;
 wire [8:0] ds_esubcode;
-//待补充
-assign ds_ex = if_ex;
-assign ds_excode = if_ecode;
-assign ds_esubcode = if_esubcode;
 
 wire br_taken;
 wire [31:0] br_target;
@@ -158,6 +154,7 @@ wire        inst_mod_wu;
 wire        inst_csrwr;
 wire        inst_csrrd;
 wire        inst_csrxchg;
+wire        inst_syscall;
 
 wire        need_ui5;
 wire        need_si12;
@@ -177,6 +174,16 @@ wire [31:0] alu_result;
 
 wire [31:0] mem_result;
 wire [31:0] final_result;
+
+//如果上一级是异常指令
+assign ds_ex = if_ex | inst_syscall;
+assign ds_excode = if_ex ? if_ecode :
+                    inst_syscall ? `ECODE_SYS :
+                    6'b0;
+assign ds_esubcode = if_ex ? if_esubcode : 
+                    inst_syscall ? `ESUBCODE_SYS:
+                    9'b0;
+
 
 assign op_31_26  = ds_inst[31:26];
 assign op_25_24  = ds_inst[25:24];
@@ -249,6 +256,7 @@ assign inst_mod_wu = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & o
 assign inst_csrxchg = op_31_26_d[6'h01] & op_25_24_d[2'h0] & ds_inst[9:5] != 5'h0 & ds_inst[9:5] != 5'h1;
 assign inst_csrwr = op_31_26_d[6'h01] & op_25_24_d[2'h0] & ds_inst[9:5] == 5'h1;
 assign inst_csrrd = op_31_26_d[6'h01] & op_25_24_d[2'h0] & ds_inst[9:5] == 5'h0;
+assign inst_syscall = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & op_19_15_d[5'h16];
 
 assign alu_op[ 0] = inst_add_w | inst_addi_w | inst_ld_w | inst_ld_b | inst_st_w | inst_st_b | inst_st_h
                     | inst_jirl | inst_bl | inst_pcaddu12i | inst_ld_h | inst_ld_bu | inst_ld_hu;
@@ -332,12 +340,14 @@ assign mem_we        = inst_st_w | inst_st_b | inst_st_h;
 assign dest          = dst_is_r1 ? 5'd1 : rd;
 
 
-assign csr_re = inst_csrxchg | inst_csrwr | inst_csrrd;
-assign csr_we = inst_csrxchg | inst_csrwr | inst_csrrd; //这里给csrrd写使能是因为，csr_we在ES级用于交换csr和rd的值，读指令也需要写回rd，只是不写csr，因此下文mask置全0即可
-assign csr_raddr = ds_inst[21:10];
+assign csr_re = inst_csrxchg | inst_csrwr | inst_csrrd | inst_syscall;
+assign csr_we = inst_csrxchg | inst_csrwr | inst_csrrd | inst_syscall; 
+//这里给csrrd写使能是因为，csr_we在ES级用于交换csr和rd的值，读指令也需要写回rd，只是不写csr，因此下文mask置全0即可
+assign csr_raddr = inst_syscall ? `CSR_EENTRY : ds_inst[21:10];
 assign csr_write_num = csr_we ? csr_raddr : 12'd0;
 assign csr_wmask = inst_csrxchg ? rj_value :
-                   inst_csrwr ? 32'hFFFFFFFF : 32'h0;
+                   inst_csrwr ? 32'hFFFFFFFF :
+                   inst_syscall ? 32'hFFFFFFFF : 32'h0;
 
 assign rf_raddr1 = rj;
 assign rf_raddr2 = src_reg_is_rd ? rd :rk;
@@ -451,9 +461,9 @@ always @(posedge clk) begin
     end
     else if (ds_allowin) begin
         ds_valid <= fs_to_ds_valid;
-    end
-    else if (fs_to_ds_valid && ds_allowin) begin
-        fs_to_ds_bus_r <= fs_to_ds_bus;
+        if (fs_to_ds_valid) begin
+            fs_to_ds_bus_r <= fs_to_ds_bus;
+        end
     end
 end
 
