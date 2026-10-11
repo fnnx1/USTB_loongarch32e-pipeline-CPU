@@ -49,10 +49,9 @@ module mycpu_top(
     wire [31:0] csr_wvalue; //写入值
     wire [31:0] csr_rvalue; //读出值
     wire        wb_csr_xchg;
-    wire        wb_csr_re;
     wire        wb_csr_we;
 
-    assign {csr_waddr, csr_wmask, wb_csr_xchg, wb_csr_re, wb_csr_we,
+    assign {csr_waddr, csr_wmask, wb_csr_xchg, wb_csr_we,
             csr_wvalue} = ws_to_csr_bus;
     assign csr_we = wb_csr_we;
 

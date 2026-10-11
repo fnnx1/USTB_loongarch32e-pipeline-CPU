@@ -390,12 +390,11 @@ assign {
         rf_wdata //31:0
        } = ws_to_rf_bus;*/
 
-// ds_to_es_bus 总位宽 = 257 bit
+// ds_to_es_bus 总位宽 = 256 bit
 assign ds_to_es_bus = {
-                        csr_write_num, //[256:245] 12 bit
-                        csr_wmask,      //[244:213] 32 bit
-                        csr_xchg      ,  //[212]      1 bit
-                        csr_re        ,  //[211]      1 bit
+                        csr_write_num, //[255:244] 12 bit
+                        csr_wmask,      //[243:212] 32 bit
+                        csr_xchg      ,  //[211]      1 bit
                         csr_we        ,  //[210]      1 bit
                         csr_rdata     ,  //[209:178] 32 bit
                         ds_ex,        //[177]     1  bit

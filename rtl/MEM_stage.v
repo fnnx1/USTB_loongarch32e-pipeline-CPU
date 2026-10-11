@@ -32,7 +32,6 @@ module MEM_stage(
     wire [11:0] csr_write_num;
     wire [31:0] csr_wmask;
     wire csr_xchg;
-    wire csr_re;
     wire csr_we;
     wire [31:0] csr_wdata;
     reg mem_valid;
@@ -74,7 +73,6 @@ module MEM_stage(
             csr_write_num,
             csr_wmask,
             csr_xchg,
-            csr_re,
             csr_we,
             csr_wdata,
             es_ex,
@@ -140,14 +138,13 @@ module MEM_stage(
     assign data_sram_we    = (mem_valid & mem_we) ? sram_we : 4'b0;
 
     assign mem_addr_offset = alu_result[1:0];   //内存地址的偏移量*/
-    // ms_to_ws_bus 总位宽 = 167 bit
+    // ms_to_ws_bus 总位宽 = 166 bit
     wire [31:0] final_result;
     assign final_result = (res_from_mem | load_op) ? sram_rdata : alu_result;
     assign ms_to_ws_bus = {
-                            csr_write_num ,  //[166:155] 12 bit  CSR写地址
-                            csr_wmask    ,  //[154:123] 32 bit  CSR写掩码
-                            csr_xchg      ,  //[122]      1 bit
-                            csr_re        ,  //[121]      1 bit
+                            csr_write_num ,  //[165:154] 12 bit  CSR写地址
+                            csr_wmask    ,  //[153:122] 32 bit  CSR写掩码
+                            csr_xchg      ,  //[121]      1 bit
                             csr_we        ,  //[120]      1 bit
                             csr_wdata     ,  //[119:88]  32 bit
                             mem_ex      ,  //[87]     异常标志

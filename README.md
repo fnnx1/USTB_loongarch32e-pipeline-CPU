@@ -78,4 +78,4 @@ WARNING: Too many words specified in data file ../../../../../../../../func/obj/
 3. 有些先入为主认为跑的程序一定是用户程序了，实际上没人动权限级，初始就是0，所以可以直接对着测试看哪个不对不断补充就可以。而不是按异常顺序来
 4. 按异常顺序支持异常 总线上增加16位，包括ecode，esubcode，ex
     1. 已实现csrxchange
-    
+    2. 删除流水线寄存器中传递的csr_re，csr在ID阶段组合读出

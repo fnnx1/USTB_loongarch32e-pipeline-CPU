@@ -27,7 +27,6 @@ module WB_stage(
     wire [11:0] csr_write_num;
     wire [31:0] csr_wmask;
     wire csr_xchg;
-    wire csr_re;
     wire csr_we;
     wire [31:0] csr_wdata;
     reg ws_valid;
@@ -49,10 +48,9 @@ module WB_stage(
     assign ws_allowin      = !ws_valid || ws_ready_go;
 
    
-    // ws_to_rf_bus 总位宽 = 1+1+1+32+1+6+9+1+1+5+32 = 90 bit
+    // ws_to_rf_bus 总位宽 = 1+1+32+1+6+9+1+1+5+32 = 89 bit
     assign ws_to_rf_bus = {
-                        csr_xchg,       //[89]
-                        csr_re,         //[88]
+                        csr_xchg,       //[88]
                         csr_we,         //[87]
                         csr_wdata,      //[86:55]
                         ws_ex,          //[54]
@@ -63,12 +61,11 @@ module WB_stage(
                         ms_to_ws_bus_r[69:65],           //[36:32] 写寄存器地址
                         ms_to_ws_bus_r[63:32]//[31: 0] 写回数据
                         };
-    // ws_to_csr_bus 总位宽 = 12+32+1+1+1+32 = 79 bit
+    // ws_to_csr_bus 总位宽 = 12+32+1+1+32 = 78 bit
     assign ws_to_csr_bus = {
-                            csr_write_num,  //[78:67]
-                            csr_wmask,      //[66:35]
-                            csr_xchg,       //[34]
-                            csr_re,         //[33]
+                            csr_write_num,  //[77:66]
+                            csr_wmask,      //[65:34]
+                            csr_xchg,       //[33]
                             csr_we,         //[32]
                             csr_wdata       //[31:0]
                             };
@@ -76,12 +73,11 @@ module WB_stage(
     assign ws_ex = ms_to_ws_bus_r[87];
     assign ws_excode = ms_to_ws_bus_r[86:81];
     assign ws_esubcode = ms_to_ws_bus_r[80:72];
-    assign csr_xchg = ms_to_ws_bus_r[122];
-    assign csr_re = ms_to_ws_bus_r[121];
+    assign csr_xchg = ms_to_ws_bus_r[121];
     assign csr_we = ws_valid && ms_to_ws_bus_r[120];
     assign csr_wdata = ms_to_ws_bus_r[119:88];
-    assign csr_wmask = ms_to_ws_bus_r[154:123];
-    assign csr_write_num = ms_to_ws_bus_r[166:155];
+    assign csr_wmask = ms_to_ws_bus_r[153:122];
+    assign csr_write_num = ms_to_ws_bus_r[165:154];
     assign ws_to_rf_valid = ws_valid;
     // debug info generate
     assign debug_wb_pc       = ws_valid ? ms_to_ws_bus_r[31:0] : 32'b0;
