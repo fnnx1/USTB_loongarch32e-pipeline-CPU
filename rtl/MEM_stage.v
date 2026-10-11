@@ -13,8 +13,22 @@ module MEM_stage(
     output wire        ms_to_ws_valid,  //告知下一级数据是否有效
     output wire [`MS_TO_WS_BUS_WD -1 :0] ms_to_ws_bus,  //写回缓冲区
     //内存访问端口
-    input  wire [31:0] data_sram_rdata  //访存数据
+    input  wire [31:0] data_sram_rdata,  //访存数据
+    
+    input  wire ex
 );
+    reg ex_r_now, ex_r_previous;
+    wire ex_flush = ex_r_now && !ex_r_previous;
+    always @(posedge clk) begin
+        if (reset) begin
+            ex_r_now <= 1'b0;
+            ex_r_previous <= 1'b0;
+        end else begin
+            ex_r_previous <= ex_r_now;
+            ex_r_now <= ex;
+        end
+    end
+
     //异常处理
     wire mem_ex;
     wire [5:0] mem_excode;
@@ -48,19 +62,17 @@ module MEM_stage(
                             ds_pc  //当前指令的pc,用于debug
                             };*/
     assign ms_ready_go     = 1'b1;
-    assign ms_allowin      = !mem_valid || ms_ready_go && ws_allowin;
-    assign ms_to_ws_valid  = mem_valid && ms_ready_go;
+    assign ms_allowin      = !mem_valid || ms_ready_go && ws_allowin || ex_flush;
+    assign ms_to_ws_valid  = mem_valid && ms_ready_go && !ex_flush;
     always @(posedge clk) begin
-        if (reset) begin
+        if (reset || ex_flush) begin
             mem_valid <= 1'b0;
             es_to_ms_bus_r <= 0;
-        end
-        else if (ms_allowin) begin
-            mem_valid <= es_to_ms_valid;
-        end
-
-        if (es_to_ms_valid && ms_allowin) begin
-            es_to_ms_bus_r <= es_to_ms_bus;
+        end else begin
+            if (ms_allowin)
+                mem_valid <= es_to_ms_valid;
+            if (es_to_ms_valid && ms_allowin)
+                es_to_ms_bus_r <= es_to_ms_bus;
         end
     end
     wire         mem_we, gr_we,res_from_mem, load_op, load_signed;

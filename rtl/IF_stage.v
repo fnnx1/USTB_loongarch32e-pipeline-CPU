@@ -12,9 +12,24 @@ module IF_stage(
     output wire [3:0] inst_sram_we,
     output wire [31:0] inst_sram_addr,
     output wire [31:0] inst_sram_wdata,
-    input  wire [31:0] inst_sram_rdata
+    input  wire [31:0] inst_sram_rdata,
+
+    input wire ex_pc,
+    input wire ex
 );
-    //异常处理
+    //异常状态输入(乒乓判断)
+    reg ex_r_now , ex_r_previous;
+    wire ex_flush = ex_r_now && !ex_r_previous;
+    always @(posedge clk) begin
+        if (reset) begin
+            ex_r_now <= 1'b0;
+            ex_r_previous <= 1'b0;
+        end else begin
+            ex_r_previous <= ex_r_now;
+            ex_r_now <= ex;
+        end
+    end
+    //异常输出处理
     wire if_ex; //if阶段的异常信号
     wire [5:0] if_ecode; //if阶段的异常码
     wire [8:0] if_esubcode; //if阶段的异常子码
@@ -72,8 +87,10 @@ module IF_stage(
     always@(posedge clk)begin
         if(reset)begin
             fs_pc <= 32'h1bfffffc;
-        end else if(to_fs_valid && fs_allowin)begin
+        end else if(to_fs_valid && fs_allowin && !ex_flush)begin
             fs_pc <= next_pc;
+        end else begin
+            fs_pc <= ex_pc;
         end
     end
 

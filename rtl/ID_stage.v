@@ -27,9 +27,21 @@ module ID_stage(
 
     output wire csr_re,
     output wire [11:0] csr_raddr,
-    input  wire [31:0] csr_rdata
-);
+    input  wire [31:0] csr_rdata,
 
+    input wire ex
+);
+    reg ex_r_now , ex_r_previous;
+    wire ex_flush = ex_r_now && !ex_r_previous;
+    always @(posedge clk) begin
+        if (reset) begin
+            ex_r_now <= 1'b0;
+            ex_r_previous <= 1'b0;
+        end else begin
+            ex_r_previous <= ex_r_now;
+            ex_r_now <= ex;
+        end
+    end
 // 异常处理
 wire        if_ex;
 wire [5:0] if_ecode;
@@ -430,17 +442,17 @@ wire ms_load_hazard = ms_to_ws_valid && ms_dest[38] && (ms_match_rj || ms_match_
 wire load_data_hazard = es_load_hazard || ms_load_hazard;
 assign ds_ready_go = reset || !load_data_hazard;
 // 是否是写指令，且是否寄存器值相等
-assign ds_allowin      = !ds_valid || ds_ready_go && es_allowin;
-assign ds_to_es_valid  = ds_valid && ds_ready_go;
+assign ds_allowin      = !ds_valid || ds_ready_go && es_allowin || ex_flush;
+assign ds_to_es_valid  = ds_valid && ds_ready_go && !ex_flush;
 always @(posedge clk) begin
-    if (reset) begin
+    if (reset || ex_flush) begin
         ds_valid <= 1'b0;
+        fs_to_ds_bus_r <= 0;
     end
     else if (ds_allowin) begin
         ds_valid <= fs_to_ds_valid;
     end
-
-    if (fs_to_ds_valid && ds_allowin) begin
+    else if (fs_to_ds_valid && ds_allowin) begin
         fs_to_ds_bus_r <= fs_to_ds_bus;
     end
 end

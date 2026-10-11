@@ -16,9 +16,23 @@ module WB_stage(
     output wire [ 3:0] debug_wb_rf_we,
     output wire [ 4:0] debug_wb_rf_wnum,
     output wire [31:0] debug_wb_rf_wdata,
-    input  wire        ws_to_rf_valid
+    output wire        ws_to_rf_valid,
+
+    input wire ex
     
 );
+    reg ex_r_now, ex_r_previous;
+    wire ex_flush = ex_r_now && !ex_r_previous;
+    always @(posedge clk) begin
+        if (reset) begin
+            ex_r_now <= 1'b0;
+            ex_r_previous <= 1'b0;
+        end else begin
+            ex_r_previous <= ex_r_now;
+            ex_r_now <= ex;
+        end
+    end
+
     //异常处理
     wire ws_ex;
     wire [5:0] ws_excode;
@@ -47,10 +61,8 @@ module WB_stage(
     assign ws_allowin      = !ws_valid || ws_ready_go;
 
    
-    // ws_to_rf_bus 总位宽 = 1+32+1+6+9+1+1+5+32 = 88 bit
+    // ws_to_rf_bus 总位宽 = 1+6+9+1+1+5+32 = 55 bit
     assign ws_to_rf_bus = {
-                        csr_we,         //[87]
-                        csr_wdata,      //[86:55]
                         ws_ex,          //[54]
                         ws_excode,      //[53:48]
                         ws_esubcode,    //[47:39]
@@ -67,9 +79,9 @@ module WB_stage(
                             csr_wdata       //[31:0]
                             };
 
-    assign ws_ex = ms_to_ws_bus_r[87];
-    assign ws_excode = ms_to_ws_bus_r[86:81];
-    assign ws_esubcode = ms_to_ws_bus_r[80:72];
+    assign ws_ex = ws_valid && ms_to_ws_bus_r[87];
+    assign ws_excode = ws_valid ? ms_to_ws_bus_r[86:81] : 6'b0;
+    assign ws_esubcode = ws_valid ? ms_to_ws_bus_r[80:72] : 9'b0;
     assign csr_we = ws_valid && ms_to_ws_bus_r[120];
     assign csr_wdata = ms_to_ws_bus_r[119:88];
     assign csr_wmask = ms_to_ws_bus_r[152:121];
@@ -81,16 +93,14 @@ module WB_stage(
     assign debug_wb_rf_wnum  = ws_valid ? ms_to_ws_bus_r[69:65] : 5'b0;
     assign debug_wb_rf_wdata = ws_valid ? ws_to_rf_bus[31:0] : 32'b0;
     always @(posedge clk) begin
-        if (reset) begin
+        if (reset || ex_flush) begin
             ws_valid <= 1'b0;
             ms_to_ws_bus_r <= 0;
-        end
-        else if (ws_allowin) begin
-            ws_valid <= ms_to_ws_valid;
-        end
-
-        if (ms_to_ws_valid && ws_allowin) begin
-            ms_to_ws_bus_r <= ms_to_ws_bus;
+        end else begin
+            if (ws_allowin)
+                ws_valid <= ms_to_ws_valid;
+            if (ms_to_ws_valid && ws_allowin)
+                ms_to_ws_bus_r <= ms_to_ws_bus;
         end
     end
 endmodule

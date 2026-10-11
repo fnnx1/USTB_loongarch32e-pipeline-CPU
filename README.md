@@ -82,3 +82,4 @@ WARNING: Too many words specified in data file ../../../../../../../../func/obj/
     3. ex8_obj 692行，异常处理入口地址，接下来要实现csrrd
     4. 因为之前测试的csrwr一直是初始化然后往通用寄存器里写0，所以没检测到。。实现csrwr的时候发现，csrxchg和csrwr相比只是多了掩码。所以实际上只需要根据是否有写入csr使能来判断是否需要交换寄存器即可。
     5. 已实现csrrd
+5. 实现了异常刷新逻辑

@@ -16,8 +16,22 @@ module EX_stage(
     output wire        data_sram_en,    //数据内存使能
     output wire [31:0] data_sram_addr,  //访问地址
     output wire [31:0] data_sram_wdata, //写入数据
-    output wire [3:0]  data_sram_we     //数据内存对应字节访问使能
+    output wire [3:0]  data_sram_we,     //数据内存对应字节访问使能
+
+    input wire         ex
 );
+    reg ex_r_now, ex_r_previous;
+    wire ex_flush = ex_r_now && !ex_r_previous;
+    always @(posedge clk) begin
+        if (reset) begin
+            ex_r_now <= 1'b0;
+            ex_r_previous <= 1'b0;
+        end else begin
+            ex_r_previous <= ex_r_now;
+            ex_r_now <= ex;
+        end
+    end
+
     //异常处理
     wire es_ex; //ex阶段的异常信号
     wire [5:0] es_excode; //ex阶段的异常码
@@ -40,16 +54,14 @@ module EX_stage(
     assign es_allowin      = !es_valid || es_ready_go && ms_allowin;
     assign es_to_ms_valid  = es_valid && es_ready_go;
     always @(posedge clk) begin
-        if (reset) begin
+        if (reset || ex_flush) begin
             es_valid <= 1'b0;
             ds_to_es_bus_r <= 0;
-        end
-        else if (es_allowin) begin
-             es_valid <= ds_to_es_valid;
-        end
-
-        if (ds_to_es_valid && es_allowin) begin
-            ds_to_es_bus_r <= ds_to_es_bus;
+        end else begin
+            if (es_allowin)
+                es_valid <= ds_to_es_valid;
+            if (ds_to_es_valid && es_allowin)
+                ds_to_es_bus_r <= ds_to_es_bus;
         end
     end
 

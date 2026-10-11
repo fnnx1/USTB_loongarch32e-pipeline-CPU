@@ -12,8 +12,8 @@
     `define ES_TO_MS_BUS_WD 201
     //MS->WS 12+32+1+32+1+6+9+1+1+5+1+32+32=165
     `define MS_TO_WS_BUS_WD 165
-    //WS->RF 1+32+1+6+9+1+1+5+32=88
-    `define WS_TO_RF_BUS_WD 88
+    //WS->RF 1+6+9+1+1+5+32=55
+    `define WS_TO_RF_BUS_WD 55
     //WS->CSR 12+32+1+32=77
     `define WS_TO_CSR_BUS_WD 77
 
