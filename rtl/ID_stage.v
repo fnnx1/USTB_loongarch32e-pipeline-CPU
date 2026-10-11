@@ -143,6 +143,9 @@ wire        inst_mulh_w;
 wire        inst_mulh_wu;
 wire        inst_mod_w;
 wire        inst_mod_wu;
+wire        inst_csrwr;
+wire        inst_csrrd;
+wire        inst_csrxchg;
 
 wire        need_ui5;
 wire        need_si12;
@@ -233,6 +236,7 @@ assign inst_mod_wu = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & o
 //特权级
 assign inst_csrxchg = op_31_26_d[6'h01] & op_25_24_d[2'h0] & ds_inst[9:5] != 5'h0 & ds_inst[9:5] != 5'h1;
 assign inst_csrwr = op_31_26_d[6'h01] & op_25_24_d[2'h0] & ds_inst[9:5] == 5'h1;
+assign inst_csrrd = op_31_26_d[6'h01] & op_25_24_d[2'h0] & ds_inst[9:5] == 5'h0;
 
 assign alu_op[ 0] = inst_add_w | inst_addi_w | inst_ld_w | inst_ld_b | inst_st_w | inst_st_b | inst_st_h
                     | inst_jirl | inst_bl | inst_pcaddu12i | inst_ld_h | inst_ld_bu | inst_ld_hu;
@@ -273,7 +277,7 @@ assign br_offs = need_si26 ? {{ 4{i26[25]}}, i26[25:0], 2'b0} :
 assign jirl_offs = {{14{i16[15]}}, i16[15:0], 2'b0};
 
 assign src_reg_is_rd = inst_beq | inst_bne | inst_st_w | inst_st_b | inst_st_h | inst_blt | inst_bge | inst_bltu | inst_bgeu
-                        | inst_csrxchg | inst_csrwr;
+                        | inst_csrxchg | inst_csrwr | inst_csrrd ;
 assign src1_is_pc    = inst_jirl | inst_bl | inst_pcaddu12i;
 
 assign src2_is_imm   = inst_slli_w |
@@ -315,8 +319,9 @@ assign gr_we         = ~inst_st_w & ~inst_st_b & ~inst_st_h & ~inst_beq & ~inst_
 assign mem_we        = inst_st_w | inst_st_b | inst_st_h;
 assign dest          = dst_is_r1 ? 5'd1 : rd;
 
-assign csr_re = inst_csrxchg | inst_csrwr;
-assign csr_we = inst_csrxchg | inst_csrwr;
+
+assign csr_re = inst_csrxchg | inst_csrwr | inst_csrrd;
+assign csr_we = inst_csrxchg | inst_csrwr | inst_csrrd; //这里给csrrd写使能是因为，csr_we在ES级用于交换csr和rd的值，读指令也需要写回rd，只是不写csr，因此下文mask置全0即可
 assign csr_raddr = ds_inst[21:10];
 assign csr_write_num = csr_we ? csr_raddr : 12'd0;
 assign csr_wmask = inst_csrxchg ? rj_value :
