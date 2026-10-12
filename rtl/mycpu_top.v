@@ -39,6 +39,14 @@ module mycpu_top(
     wire [`MS_TO_WS_BUS_WD -1:0] ms_to_ws_bus;
     wire [`WS_TO_RF_BUS_WD -1:0] ws_to_rf_bus;
     wire [`WS_TO_CSR_BUS_WD -1:0] ws_to_csr_bus;
+    // CSR冲突总线格式：{CSR写使能, CSR写地址}
+    wire [12:0] es_csr_conflict_bus;
+    wire [12:0] ms_csr_conflict_bus;
+    wire [12:0] ws_csr_conflict_bus;
+
+    assign es_csr_conflict_bus = {es_to_ms_bus[156], es_to_ms_bus[200:189]};
+    assign ms_csr_conflict_bus = {ms_to_ws_bus[120], ms_to_ws_bus[164:153]};
+    assign ws_csr_conflict_bus = {ws_to_csr_bus[32], ws_to_csr_bus[76:65]};
 
 
     wire        csr_re;     //读使能
@@ -134,7 +142,10 @@ module mycpu_top(
         .es_to_ms_valid(es_to_ms_valid),
         .ms_to_ws_valid(ms_to_ws_valid),
         .ws_to_rf_valid(ws_valid),
-        .ex(wb_ex)
+        .ex(wb_ex),
+        .es_csr_conflict_bus(es_csr_conflict_bus),
+        .ms_csr_conflict_bus(ms_csr_conflict_bus),
+        .ws_csr_conflict_bus(ws_csr_conflict_bus)
     );
 
     EX_stage ex_stage(
