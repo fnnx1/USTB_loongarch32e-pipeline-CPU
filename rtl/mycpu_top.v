@@ -76,6 +76,12 @@ module mycpu_top(
     wire        coreid_in;  //核心ID输入
 
     assign {wb_ex, wb_ecode, wb_esubcode} = ws_to_rf_bus[54:39];
+    assign wb_pc = debug_wb_pc;
+
+    assign hw_int_in = 8'b0;//测例这么要求的，本质寄存器也是只读状态
+    //暂定
+    assign ipi_int_in = 1'b0;
+    assign coreid_in = 1'b0;
     csr _csr(
         .clk(clk),
         .reset(reset),

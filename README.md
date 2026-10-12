@@ -86,3 +86,4 @@ WARNING: Too many words specified in data file ../../../../../../../../func/obj/
 6. 实现了冲突处理，阻塞处理
 7. 发现使用之前的乒乓异常会导致刷新会慢一拍，wb_ex为1的下个阶段，eentry地址已经修改。而刷新要等一个周期，就会导致下个周期拿到的pc值是更新后的eentry(相当于没跳)
 8. 应该给next_pc赋异常pc，而不是当前pc，这是个简单的问题。。因为取指看的是next_pc(bram)
+9. 已完成syscall，似乎这些信号是硬件参数限制的。
