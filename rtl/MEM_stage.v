@@ -15,8 +15,10 @@ module MEM_stage(
     //内存访问端口
     input  wire [31:0] data_sram_rdata,  //访存数据
     
-    input  wire wb_ex
+    input  wire wb_ex,
+    input  wire ertn_flush
 );
+
     //异常处理
     wire mem_ex;
     wire [5:0] mem_excode;
@@ -33,6 +35,7 @@ module MEM_stage(
     //CSR相关
     wire [11:0] csr_write_num;
     wire [31:0] csr_wmask;
+    wire csr_ertn;
     wire csr_we;
     wire [31:0] csr_wdata;
     reg mem_valid;
@@ -53,7 +56,7 @@ module MEM_stage(
     assign ms_allowin      = !mem_valid || ms_ready_go && ws_allowin || wb_ex;
     assign ms_to_ws_valid  = mem_valid && ms_ready_go && !wb_ex;
     always @(posedge clk) begin
-        if (reset || wb_ex) begin
+        if (reset || wb_ex || ertn_flush || (mem_ex && ms_ready_go)) begin
             mem_valid <= 1'b0;
             es_to_ms_bus_r <= 0;
         end else begin
@@ -69,6 +72,7 @@ module MEM_stage(
     wire [31:0] rkd_value, alu_result, ds_pc, sram_wdata;
     wire [3:0] sram_we;
     assign {
+            csr_ertn,
             csr_write_num,
             csr_wmask,
             csr_we,
@@ -136,10 +140,11 @@ module MEM_stage(
     assign data_sram_we    = (mem_valid & mem_we) ? sram_we : 4'b0;
 
     assign mem_addr_offset = alu_result[1:0];   //内存地址的偏移量*/
-    // ms_to_ws_bus 总位宽 = 165 bit
+    // ms_to_ws_bus 总位宽 = 166 bit
     wire [31:0] final_result;
     assign final_result = (res_from_mem | load_op) ? sram_rdata : alu_result;
     assign ms_to_ws_bus = {
+                            csr_ertn,      //[165]      1 bit
                             csr_write_num ,  //[164:153] 12 bit  CSR写地址
                             csr_wmask    ,  //[152:121] 32 bit  CSR写掩码
                             csr_we        ,  //[120]      1 bit

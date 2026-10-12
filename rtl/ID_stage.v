@@ -30,6 +30,7 @@ module ID_stage(
     input  wire [31:0] csr_rdata,
 
     input wire wb_ex,
+    input wire ertn_flush,
     //csr读写冲突处理,手册上说只用阻塞处理，所以并不需要传写掩码和写数据，只有12位num和1位使能
     input wire [12:0] es_csr_conflict_bus,
     input wire [12:0] ms_csr_conflict_bus,
@@ -75,6 +76,7 @@ wire [31:0]jirl_offs;
 wire csr_we;
 wire [11:0] csr_write_num;
 wire [31:0] csr_wmask;
+wire csr_ertn;
 
 //分段
 wire [5:0] op_31_26;
@@ -82,6 +84,9 @@ wire [1:0] op_25_24;
 wire [3:0] op_25_22;
 wire [ 1:0] op_21_20;
 wire [ 4:0] op_19_15;
+wire [14:0] op_14_10;
+wire [4:0] op_9_5;
+wire [4:0] op_4_0;
 
 wire [ 4:0] rd;
 wire [ 4:0] rj;
@@ -97,6 +102,9 @@ wire [3:0] op_25_24_d;
 wire [15:0] op_25_22_d;
 wire [ 3:0] op_21_20_d;
 wire [31:0] op_19_15_d;
+wire [31:0] op_14_10_d;
+wire [31:0] op_9_5_d;
+wire [31:0] op_4_0_d;
 
 wire        inst_add_w;
 wire        inst_sub_w;
@@ -148,6 +156,7 @@ wire        inst_csrwr;
 wire        inst_csrrd;
 wire        inst_csrxchg;
 wire        inst_syscall;
+wire        inst_ertn;
 
 wire        need_ui5;
 wire        need_si12;
@@ -177,12 +186,14 @@ assign ds_esubcode = if_ex ? if_esubcode :
                     inst_syscall ? `ESUBCODE_SYS:
                     9'b0;
 
-
 assign op_31_26  = ds_inst[31:26];
 assign op_25_24  = ds_inst[25:24];
 assign op_25_22  = ds_inst[25:22];
 assign op_21_20  = ds_inst[21:20];
 assign op_19_15  = ds_inst[19:15];
+assign op_14_10  = ds_inst[14:10];
+assign op_9_5   = ds_inst[9:5];
+assign op_4_0   = ds_inst[4:0];
 
 assign rd   = ds_inst[ 4: 0];
 assign rj   = ds_inst[ 9: 5];
@@ -198,6 +209,9 @@ decoder_2_4  u_dec4(.in(op_25_24 ), .out(op_25_24_d ));
 decoder_4_16 u_dec1(.in(op_25_22 ), .out(op_25_22_d ));
 decoder_2_4  u_dec2(.in(op_21_20 ), .out(op_21_20_d ));
 decoder_5_32 u_dec3(.in(op_19_15 ), .out(op_19_15_d ));
+decoder_5_32 u_dec5(.in(op_14_10 ), .out(op_14_10_d ));
+decoder_5_32 u_dec6(.in(op_9_5 ), .out(op_9_5_d ));
+decoder_5_32 u_dec7(.in(op_4_0 ), .out(op_4_0_d ));
 
 assign inst_add_w  = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h00];
 assign inst_sub_w  = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h1] & op_19_15_d[5'h02];
@@ -250,6 +264,7 @@ assign inst_csrxchg = op_31_26_d[6'h01] & op_25_24_d[2'h0] & ds_inst[9:5] != 5'h
 assign inst_csrwr = op_31_26_d[6'h01] & op_25_24_d[2'h0] & ds_inst[9:5] == 5'h1;
 assign inst_csrrd = op_31_26_d[6'h01] & op_25_24_d[2'h0] & ds_inst[9:5] == 5'h0;
 assign inst_syscall = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & op_19_15_d[5'h16];
+assign inst_ertn = op_31_26_d[6'h01] & op_25_22_d[4'h9] & op_21_20_d[2'h0] & op_19_15_d[5'h10] & op_14_10_d[5'he] & op_9_5_d[5'h0] & op_4_0_d[5'h0];
 
 assign alu_op[ 0] = inst_add_w | inst_addi_w | inst_ld_w | inst_ld_b | inst_st_w | inst_st_b | inst_st_h
                     | inst_jirl | inst_bl | inst_pcaddu12i | inst_ld_h | inst_ld_bu | inst_ld_hu;
@@ -334,13 +349,13 @@ assign dest          = dst_is_r1 ? 5'd1 : rd;
 
 
 assign csr_re = inst_csrxchg | inst_csrwr | inst_csrrd | inst_syscall;
-assign csr_we = inst_csrxchg | inst_csrwr | inst_csrrd | inst_syscall; 
+assign csr_we = inst_csrxchg | inst_csrwr | inst_csrrd; 
 //这里给csrrd写使能是因为，csr_we在ES级用于交换csr和rd的值，读指令也需要写回rd，只是不写csr，因此下文mask置全0即可
 assign csr_raddr = inst_syscall ? `CSR_EENTRY : ds_inst[21:10];
 assign csr_write_num = csr_we ? csr_raddr : 12'd0;
 assign csr_wmask = inst_csrxchg ? rj_value :
-                   inst_csrwr ? 32'hFFFFFFFF :
-                   inst_syscall ? 32'hFFFFFFFF : 32'h0;
+                   inst_csrwr ? 32'hFFFFFFFF : 32'h0;
+assign csr_ertn = inst_ertn;
 
 assign rf_raddr1 = rj;
 assign rf_raddr2 = src_reg_is_rd ? rd :rk;
@@ -410,8 +425,9 @@ assign {
         rf_wdata //31:0
        } = ws_to_rf_bus;*/
 
-// ds_to_es_bus 总位宽 = 255 bit
+// ds_to_es_bus 总位宽 = 256 bit
 assign ds_to_es_bus = {
+                        csr_ertn,     //[255]      1 bit
                         csr_write_num, //[254:243] 12 bit
                         csr_wmask,      //[242:211] 32 bit
                         csr_we        ,  //[210]      1 bit
@@ -441,7 +457,7 @@ assign ds_to_es_bus = {
                       };
 
 wire es_load_hazard =  es_to_ms_valid && es_dest[38] && (es_match_rj || es_match_rkd);
-wire ms_load_hazard = ms_to_ws_valid && ms_dest[38] && (ms_match_rj || ms_match_rkd);
+wire ms_load_hazard =  ms_to_ws_valid && ms_dest[38] && (ms_match_rj || ms_match_rkd);
 wire load_data_hazard = es_load_hazard || ms_load_hazard;
 
 wire es_csr_hazard;
@@ -451,12 +467,16 @@ wire ws_csr_hazard;
 assign es_csr_hazard = es_to_ms_valid && es_csr_conflict_bus[12] && (es_csr_conflict_bus[11:0] == csr_write_num);
 assign ms_csr_hazard = ms_to_ws_valid && ms_csr_conflict_bus[12] && (ms_csr_conflict_bus[11:0] == csr_write_num);
 assign ws_csr_hazard = ws_to_rf_valid && ws_csr_conflict_bus[12] && (ws_csr_conflict_bus[11:0] == csr_write_num);
-assign ds_ready_go = reset || !load_data_hazard && !es_csr_hazard && !ms_csr_hazard && !ws_csr_hazard;
+//ex8_obj中有个测试会在syscall后几条指令触发一个load_use，导致会置ds_ready_go为0，使得取指也暂停，
+assign ds_ready_go = reset || (!load_data_hazard && !es_csr_hazard && !ms_csr_hazard && !ws_csr_hazard) || wb_ex;
+
 // 是否是写指令，且是否寄存器值相等
 assign ds_allowin      = !ds_valid || ds_ready_go && es_allowin;
 assign ds_to_es_valid  = ds_valid && ds_ready_go && !wb_ex;
+//这里使用es_allow_in是防止当前为syscall，上一个指令是div等需要等待的指令还在流水线中，导致取指暂停，异常指令被吞掉
+// ds_ready_go 防止load_use冒险导致的取指暂停，反正是要确保异常指令能不被刷新，能传到下一级
 always @(posedge clk) begin
-    if (reset || wb_ex) begin
+    if (reset || wb_ex || ertn_flush || (ds_ex && es_allowin && ds_ready_go)) begin
         ds_valid <= 1'b0;
         fs_to_ds_bus_r <= 0;
     end

@@ -12,6 +12,7 @@ module csr(
     output wire [31:0] csr_rvalue,
 
     output wire [31:0] ex_entry,
+    output wire [31:0] ertn_entry,
     output wire has_inst,
     input wire ertn_flush,
     input wire wb_ex,
@@ -57,18 +58,6 @@ module csr(
         else if (csr_we && csr_waddr==`CSR_CRMD)
             csr_crmd_plv <= csr_wmask[`CSR_CRMD_PLV]&csr_wvalue[`CSR_CRMD_PLV]
                         | ~csr_wmask[`CSR_CRMD_PLV]&csr_crmd_plv;
-    end
-
-    always @(posedge clk) begin
-        if (reset)
-            csr_crmd_ie <= 1'b0;
-        else if (wb_ex)
-            csr_crmd_ie <= 1'b0;
-        else if (ertn_flush)
-            csr_crmd_ie <= csr_prmd_pie;
-        else if (csr_we && csr_waddr==`CSR_CRMD)
-            csr_crmd_ie <= csr_wmask[`CSR_CRMD_PIE]&csr_wvalue[`CSR_CRMD_PIE]
-                        | ~csr_wmask[`CSR_CRMD_PIE]&csr_crmd_ie;
     end
 
     always @(posedge clk) begin
@@ -275,6 +264,7 @@ module csr(
             default:     csr_rdata = 32'b0;
         endcase
     end
+    assign ertn_entry = csr_era_pc;
     assign ex_entry = {csr_eentry_va, 6'b0};
     assign csr_rvalue = csr_re ? csr_rdata : 32'b0;
 endmodule

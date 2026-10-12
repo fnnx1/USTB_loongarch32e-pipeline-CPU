@@ -15,7 +15,9 @@ module IF_stage(
     input  wire [31:0] inst_sram_rdata,
 
     input wire [31:0] ex_pc,
-    input wire wb_ex
+    input wire wb_ex,
+    input wire ertn_flush,
+    input wire [31:0] ertn_entry
 );
     //异常输出处理
     wire if_ex; //if阶段的异常信号
@@ -55,8 +57,10 @@ module IF_stage(
     //pre-if stage
     assign to_fs_valid = ~reset;
     assign seq_pc = fs_pc + 3'h4; //顺序
-    assign next_pc = (br_taken == 1 ) ? br_target :
-                    (wb_ex) ? ex_pc :
+    //哇恶意满满啊，后面甚至接着的第二个周期是个跳转指令，你无敌了计组课设
+    assign next_pc = (wb_ex) ? ex_pc :
+                    (ertn_flush) ? ertn_entry :
+                    (br_taken == 1 ) ? br_target :
                     seq_pc;
 
     //IF stage

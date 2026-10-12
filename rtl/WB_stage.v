@@ -18,7 +18,8 @@ module WB_stage(
     output wire [31:0] debug_wb_rf_wdata,
     output wire        ws_to_rf_valid,
 
-    input wire wb_ex
+    input wire wb_ex,
+    input wire ertn_flush
     
 );
 
@@ -29,6 +30,7 @@ module WB_stage(
     
     wire [11:0] csr_write_num;
     wire [31:0] csr_wmask;
+    wire csr_ertn;
     wire csr_we;
     wire [31:0] csr_wdata;
     reg ws_valid;
@@ -49,6 +51,14 @@ module WB_stage(
     //最后一级, 没有下游 allowin
     assign ws_allowin      = !ws_valid || ws_ready_go;
 
+    reg ws_ex_r; //是否上一条指令发生过异常
+    always @(posedge clk) begin
+        if (reset || wb_ex || ertn_flush) begin
+            ws_ex_r <= 1'b0;
+        end else if (ws_ex) begin
+            ws_ex_r <= 1'b1;
+        end
+    end
    
     // ws_to_rf_bus 总位宽 = 1+6+9+1+1+5+32 = 55 bit
     assign ws_to_rf_bus = {
@@ -60,8 +70,9 @@ module WB_stage(
                         ms_to_ws_bus_r[69:65],           //[36:32] 写寄存器地址
                         ms_to_ws_bus_r[63:32]//[31: 0] 写回数据
                         };
-    // ws_to_csr_bus 总位宽 = 12+32+1+32 = 77 bit
+    // ws_to_csr_bus 总位宽 = 1(csr_ertn)+12+32+1+32 = 78 bit
     assign ws_to_csr_bus = {
+                            ws_valid && csr_ertn, //[77]     ertn指令标志
                             csr_write_num,  //[76:65]
                             csr_wmask,      //[64:33]
                             csr_we,         //[32]
@@ -73,6 +84,7 @@ module WB_stage(
     assign ws_esubcode = ws_valid ? ms_to_ws_bus_r[80:72] : 9'b0;
     
     assign csr_we = ws_valid && ms_to_ws_bus_r[120];
+    assign csr_ertn = ms_to_ws_bus_r[165];
     assign csr_wdata = ms_to_ws_bus_r[119:88];
     assign csr_wmask = ms_to_ws_bus_r[152:121];
     assign csr_write_num = ms_to_ws_bus_r[164:153];
@@ -83,7 +95,7 @@ module WB_stage(
     assign debug_wb_rf_wnum  = ws_valid ? ms_to_ws_bus_r[69:65] : 5'b0;
     assign debug_wb_rf_wdata = ws_valid ? ws_to_rf_bus[31:0] : 32'b0;
     always @(posedge clk) begin
-        if (reset || wb_ex) begin
+        if (reset || wb_ex || ertn_flush || (ws_ex && ws_ready_go)) begin
             ws_valid <= 1'b0;
             ms_to_ws_bus_r <= 0;
         end else begin

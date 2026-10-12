@@ -18,7 +18,8 @@ module EX_stage(
     output wire [31:0] data_sram_wdata, //写入数据
     output wire [3:0]  data_sram_we,     //数据内存对应字节访问使能
 
-    input wire         wb_ex
+    input wire         wb_ex,
+    input wire         ertn_flush
 );
 
     //异常处理
@@ -36,6 +37,7 @@ module EX_stage(
     //CSR相关信号
     wire [11:0] csr_write_num;
     wire [31:0] csr_wmask;
+    wire csr_ertn;
     wire csr_we;
     wire [31:0] _csr_rdata; //交换前
     wire [31:0] csr_wdata; //交换后
@@ -46,7 +48,7 @@ module EX_stage(
     assign es_allowin      = !es_valid || es_ready_go && ms_allowin;
     assign es_to_ms_valid  = es_valid && es_ready_go;
     always @(posedge clk) begin
-        if (reset || wb_ex) begin
+        if (reset || wb_ex || ertn_flush || (es_ex && ms_allowin)) begin
             es_valid <= 1'b0;
             ds_to_es_bus_r <= 0;
         end else begin
@@ -83,6 +85,7 @@ module EX_stage(
     wire [3:0] sram_we;
 
     assign {
+            csr_ertn,
             csr_write_num,
             csr_wmask,
             csr_we,
@@ -205,8 +208,9 @@ module EX_stage(
     //csrxchange交换逻辑
     assign final_result = csr_we ? _csr_rdata : div_mod_result;
     assign csr_wdata = csr_we ? (es_excode == `ECODE_SYS ? ds_pc + 4 : rkd_value) : 32'h0;
-    // es_to_ms_bus 总位宽 = 201 bit
+    // es_to_ms_bus 总位宽 = 202 bit
     assign es_to_ms_bus = {
+                        csr_ertn,      //[201]      1 bit
                         csr_write_num ,  //[200:189] 12 bit  CSR写地址
                         csr_wmask    ,  //[188:157] 32 bit  CSR写掩码
                         csr_we        ,  //[156]      1 bit

@@ -58,13 +58,12 @@ module mycpu_top(
     wire [31:0] csr_rvalue; //读出值
     wire        wb_csr_we;
 
-    assign {csr_waddr, csr_wmask, wb_csr_we,
-            csr_wvalue} = ws_to_csr_bus;
-    assign csr_we = wb_csr_we;
+
 
     wire [31:0] ex_entry;   //异常入口地址 
     wire        has_inst;   //是否有指令
     wire        ertn_flush; //异常返回刷新信号
+    wire [31:0] ertn_entry;
     wire        wb_ex;      //写回阶段异常信号
     wire [5:0]  wb_ecode;   //写回阶段异常码
     wire [8:0]  wb_esubcode; //写回阶段异常子码
@@ -75,6 +74,9 @@ module mycpu_top(
     wire        ipi_int_in; //IPI中断输入 ioctl
     wire        coreid_in;  //核心ID输入
 
+    assign {ertn_flush, csr_waddr, csr_wmask, wb_csr_we,
+            csr_wvalue} = ws_to_csr_bus;
+    assign csr_we = wb_csr_we;
     assign {wb_ex, wb_ecode, wb_esubcode} = ws_to_rf_bus[54:39];
     assign wb_pc = debug_wb_pc;
 
@@ -97,6 +99,7 @@ module mycpu_top(
         .ex_entry(ex_entry),
         .has_inst(has_inst),
         .ertn_flush(ertn_flush),
+        .ertn_entry(ertn_entry),
         .wb_ex(wb_ex),
         .wb_ecode(wb_ecode),
         .wb_esubcode(wb_esubcode),
@@ -119,7 +122,9 @@ module mycpu_top(
         .inst_sram_wdata(inst_sram_wdata),
         .inst_sram_rdata(inst_sram_rdata),
         .ex_pc(ex_entry),
-        .wb_ex(wb_ex)
+        .wb_ex(wb_ex),
+        .ertn_flush(ertn_flush),
+        .ertn_entry(ertn_entry)
     );
 
     // 译码
@@ -149,6 +154,7 @@ module mycpu_top(
         .ms_to_ws_valid(ms_to_ws_valid),
         .ws_to_rf_valid(ws_valid),
         .wb_ex(wb_ex),
+        .ertn_flush(ertn_flush),
         .es_csr_conflict_bus(es_csr_conflict_bus),
         .ms_csr_conflict_bus(ms_csr_conflict_bus),
         .ws_csr_conflict_bus(ws_csr_conflict_bus)
@@ -171,7 +177,8 @@ module mycpu_top(
         .data_sram_addr(data_sram_addr),
         .data_sram_wdata(data_sram_wdata),
         .data_sram_we(data_sram_we),
-        .wb_ex(wb_ex)
+        .wb_ex(wb_ex),
+        .ertn_flush(ertn_flush)
     );
 
     MEM_stage mem_stage(
@@ -187,7 +194,8 @@ module mycpu_top(
         .ms_to_ws_valid(ms_to_ws_valid),  //告知下一级数据是否有效
         .ms_to_ws_bus(ms_to_ws_bus),   //写回缓冲区
         .data_sram_rdata(data_sram_rdata),
-        .wb_ex(wb_ex)
+        .wb_ex(wb_ex),
+        .ertn_flush(ertn_flush)
     );
 
     WB_stage wb_stage(
@@ -207,6 +215,7 @@ module mycpu_top(
         .debug_wb_rf_wnum(debug_wb_rf_wnum),
         .debug_wb_rf_wdata(debug_wb_rf_wdata),
         .ws_to_rf_valid(ws_valid),
-        .wb_ex(wb_ex)
+        .wb_ex(wb_ex),
+        .ertn_flush(ertn_flush)
     );
 endmodule
