@@ -15,12 +15,14 @@ module MEM_stage(
     //内存访问端口
     input  wire [31:0] data_sram_rdata,  //访存数据
     
-    input  wire wb_ex,
-    input  wire ertn_flush
+    input  wire has_ex,
+    input  wire has_int,
+    input  wire ertn_flush,
+
+    output wire mem_ex //用于指示MEM阶段是否发生异常/或有异常指令，用于处理精确异常中访存的冲突
 );
 
     //异常处理
-    wire mem_ex;
     wire [5:0] mem_excode;
     wire [8:0] mem_esubcode;
 
@@ -53,10 +55,10 @@ module MEM_stage(
                             ds_pc  //当前指令的pc,用于debug
                             };*/
     assign ms_ready_go     = 1'b1;
-    assign ms_allowin      = !mem_valid || ms_ready_go && ws_allowin || wb_ex;
-    assign ms_to_ws_valid  = mem_valid && ms_ready_go && !wb_ex;
+    assign ms_allowin      = !mem_valid || ms_ready_go && ws_allowin || has_int || has_ex;
+    assign ms_to_ws_valid  = mem_valid && ms_ready_go;
     always @(posedge clk) begin
-        if (reset || wb_ex || ertn_flush || (mem_ex && ms_ready_go)) begin
+        if (reset || has_ex || has_int || ertn_flush) begin
             mem_valid <= 1'b0;
             es_to_ms_bus_r <= 0;
         end else begin

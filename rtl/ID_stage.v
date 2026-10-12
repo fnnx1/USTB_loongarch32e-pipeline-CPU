@@ -29,7 +29,8 @@ module ID_stage(
     output wire [11:0] csr_raddr,
     input  wire [31:0] csr_rdata,
 
-    input wire wb_ex,
+    input wire has_ex,  //无条件例外
+    input wire has_int,
     input wire ertn_flush,
     //csr读写冲突处理,手册上说只用阻塞处理，所以并不需要传写掩码和写数据，只有12位num和1位使能
     input wire [12:0] es_csr_conflict_bus,
@@ -472,15 +473,15 @@ assign es_csr_hazard = es_to_ms_valid && es_csr_conflict_bus[12] && (es_csr_conf
 assign ms_csr_hazard = ms_to_ws_valid && ms_csr_conflict_bus[12] && (ms_csr_conflict_bus[11:0] == csr_write_num);
 assign ws_csr_hazard = ws_to_rf_valid && ws_csr_conflict_bus[12] && (ws_csr_conflict_bus[11:0] == csr_write_num);
 //ex8_obj中有个测试会在syscall后几条指令触发一个load_use，导致会置ds_ready_go为0，使得取指也暂停，
-assign ds_ready_go = reset || (!load_data_hazard && !es_csr_hazard && !ms_csr_hazard && !ws_csr_hazard) || wb_ex;
+assign ds_ready_go = reset || (!load_data_hazard && !es_csr_hazard && !ms_csr_hazard && !ws_csr_hazard) || has_int || has_ex;
 
 // 是否是写指令，且是否寄存器值相等
 assign ds_allowin      = !ds_valid || ds_ready_go && es_allowin;
-assign ds_to_es_valid  = ds_valid && ds_ready_go && !wb_ex;
+assign ds_to_es_valid  = ds_valid && ds_ready_go && !has_int;
 //这里使用es_allow_in是防止当前为syscall，上一个指令是div等需要等待的指令还在流水线中，导致取指暂停，异常指令被吞掉
 // ds_ready_go 防止load_use冒险导致的取指暂停，反正是要确保异常指令能不被刷新，能传到下一级
 always @(posedge clk) begin
-    if (reset || wb_ex || ertn_flush || (ds_ex && es_allowin && ds_ready_go)) begin
+    if (reset || has_int || ertn_flush || has_ex) begin
         ds_valid <= 1'b0;
         fs_to_ds_bus_r <= 0;
     end

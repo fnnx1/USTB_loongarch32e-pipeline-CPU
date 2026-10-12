@@ -97,3 +97,4 @@ WARNING: Too many words specified in data file ../../../../../../../../func/obj/
 ### lab6.1
 1. 支持break，并更加优雅处理syscall。
 2. b 0 这条指令有点舒服啊，接下来要进行一个时钟中断的开发
+3. 区分了无条件例外和中断，我现在觉得我的代码已化身上流人士。

@@ -61,7 +61,8 @@ module mycpu_top(
 
 
     wire [31:0] ex_entry;   //异常入口地址 
-    wire        has_inst;   //是否有指令
+    wire        has_ex;    //无条件例外
+    wire        has_int; 
     wire        ertn_flush; //异常返回刷新信号
     wire [31:0] ertn_entry;
     wire        wb_ex;      //写回阶段异常信号
@@ -97,7 +98,8 @@ module mycpu_top(
         .hw_int_in(hw_int_in),
         .ipi_int_in(ipi_int_in),
         .ex_entry(ex_entry),
-        .has_inst(has_inst),
+        .has_ex(has_ex),
+        .has_int(has_int),
         .ertn_flush(ertn_flush),
         .ertn_entry(ertn_entry),
         .wb_ex(wb_ex),
@@ -122,7 +124,8 @@ module mycpu_top(
         .inst_sram_wdata(inst_sram_wdata),
         .inst_sram_rdata(inst_sram_rdata),
         .ex_pc(ex_entry),
-        .wb_ex(wb_ex),
+        .has_ex(has_ex),
+        .has_int(has_int),
         .ertn_flush(ertn_flush),
         .ertn_entry(ertn_entry)
     );
@@ -153,7 +156,8 @@ module mycpu_top(
         .es_to_ms_valid(es_to_ms_valid),
         .ms_to_ws_valid(ms_to_ws_valid),
         .ws_to_rf_valid(ws_valid),
-        .wb_ex(wb_ex),
+        .has_ex(has_ex),
+        .has_int(has_int),
         .ertn_flush(ertn_flush),
         .es_csr_conflict_bus(es_csr_conflict_bus),
         .ms_csr_conflict_bus(ms_csr_conflict_bus),
@@ -177,8 +181,13 @@ module mycpu_top(
         .data_sram_addr(data_sram_addr),
         .data_sram_wdata(data_sram_wdata),
         .data_sram_we(data_sram_we),
+        .has_int(has_int),
+        .ertn_flush(ertn_flush),
+        .ms_ex(ms_ex),
+        .ms_to_ws_valid(ms_to_ws_valid),
         .wb_ex(wb_ex),
-        .ertn_flush(ertn_flush)
+        .ws_to_rf_valid(ws_valid),
+        .has_ex(has_ex)
     );
 
     MEM_stage mem_stage(
@@ -194,8 +203,10 @@ module mycpu_top(
         .ms_to_ws_valid(ms_to_ws_valid),  //告知下一级数据是否有效
         .ms_to_ws_bus(ms_to_ws_bus),   //写回缓冲区
         .data_sram_rdata(data_sram_rdata),
-        .wb_ex(wb_ex),
-        .ertn_flush(ertn_flush)
+        .has_ex(has_ex),
+        .has_int(has_int),
+        .ertn_flush(ertn_flush),
+        .mem_ex(ms_ex)
     );
 
     WB_stage wb_stage(
@@ -215,7 +226,8 @@ module mycpu_top(
         .debug_wb_rf_wnum(debug_wb_rf_wnum),
         .debug_wb_rf_wdata(debug_wb_rf_wdata),
         .ws_to_rf_valid(ws_valid),
-        .wb_ex(wb_ex),
+        .has_ex(has_ex),
+        .has_int(has_int),
         .ertn_flush(ertn_flush)
     );
 endmodule

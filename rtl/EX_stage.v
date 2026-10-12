@@ -18,8 +18,15 @@ module EX_stage(
     output wire [31:0] data_sram_wdata, //写入数据
     output wire [3:0]  data_sram_we,     //数据内存对应字节访问使能
 
-    input wire         wb_ex,
-    input wire         ertn_flush
+    input wire         has_ex,  //无条件例外
+    input wire         has_int,
+    input wire         ertn_flush,
+
+    //处理异常和访存的冲突
+    input wire         ms_to_ws_valid,
+    input wire         ms_ex,       //ex阶段的异常信号
+    input wire         ws_to_rf_valid,
+    input wire         wb_ex
 );
 
     //异常处理
@@ -48,7 +55,7 @@ module EX_stage(
     assign es_allowin      = !es_valid || es_ready_go && ms_allowin;
     assign es_to_ms_valid  = es_valid && es_ready_go;
     always @(posedge clk) begin
-        if (reset || wb_ex || ertn_flush || (es_ex && ms_allowin)) begin
+        if (reset || has_ex || has_int || ertn_flush) begin
             es_valid <= 1'b0;
             ds_to_es_bus_r <= 0;
         end else begin
@@ -183,8 +190,11 @@ module EX_stage(
          .m_axis_dout_tdata       (div_result_unsigned),       // output
          .m_axis_dout_tvalid      (div_result_unsigned_valid)  // output
     );
+    wire exception_st_conflict;
+    // 当内存访问阶段或写回阶段发生异常且store使能时，发生冲突
+    assign exception_st_conflict = (ms_to_ws_valid && ms_ex && data_sram_en) || (ws_to_rf_valid && wb_ex && data_sram_en);
 
-    assign data_sram_en    = es_valid && (mem_we | res_from_mem | load_op);
+    assign data_sram_en    = (mem_we | res_from_mem | load_op);
 
     assign sram_wdata = mem_size == `B ? {4{rkd_value[7:0]}} :
                         mem_size == `H ? {2{rkd_value[15:0]}} :
@@ -197,11 +207,12 @@ module EX_stage(
                         4'b1111;
     assign data_sram_addr  = alu_result;
     assign data_sram_wdata = sram_wdata;
-    assign data_sram_we    = (es_valid & mem_we) ? sram_we : 4'b0;
+    assign data_sram_we    = (!exception_st_conflict && es_valid & mem_we) ? sram_we : 4'b0;
 
     assign mem_addr_offset = alu_result[1:0];   //内存地址的偏移量
 
-    assign es_ready_go = !div_signed && !div_unsigned || (div_signed && div_result_signed_valid) || (div_unsigned && div_result_unsigned_valid);
+    assign es_ready_go = has_int || has_ex ||
+                        !exception_st_conflict && ((!div_signed && !div_unsigned) || (div_signed && div_result_signed_valid) || (div_unsigned && div_result_unsigned_valid));
     wire [31:0] div_mod_result;
     assign div_mod_result = div_signed ? (inst_div_w ? div_result_signed[63:32] : (inst_mod_w ? div_result_signed[31:0] : alu_result)) 
                         : (div_unsigned ? (inst_div_wu ? div_result_unsigned[63:32] : (inst_mod_wu ? div_result_unsigned[31:0] : alu_result)) : alu_result);
