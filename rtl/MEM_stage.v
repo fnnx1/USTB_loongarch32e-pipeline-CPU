@@ -15,20 +15,8 @@ module MEM_stage(
     //内存访问端口
     input  wire [31:0] data_sram_rdata,  //访存数据
     
-    input  wire ex
+    input  wire wb_ex
 );
-    reg ex_r_now, ex_r_previous;
-    wire ex_flush = ex_r_now && !ex_r_previous;
-    always @(posedge clk) begin
-        if (reset) begin
-            ex_r_now <= 1'b0;
-            ex_r_previous <= 1'b0;
-        end else begin
-            ex_r_previous <= ex_r_now;
-            ex_r_now <= ex;
-        end
-    end
-
     //异常处理
     wire mem_ex;
     wire [5:0] mem_excode;
@@ -62,10 +50,10 @@ module MEM_stage(
                             ds_pc  //当前指令的pc,用于debug
                             };*/
     assign ms_ready_go     = 1'b1;
-    assign ms_allowin      = !mem_valid || ms_ready_go && ws_allowin || ex_flush;
-    assign ms_to_ws_valid  = mem_valid && ms_ready_go && !ex_flush;
+    assign ms_allowin      = !mem_valid || ms_ready_go && ws_allowin || wb_ex;
+    assign ms_to_ws_valid  = mem_valid && ms_ready_go && !wb_ex;
     always @(posedge clk) begin
-        if (reset || ex_flush) begin
+        if (reset || wb_ex) begin
             mem_valid <= 1'b0;
             es_to_ms_bus_r <= 0;
         end else begin

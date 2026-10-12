@@ -29,23 +29,12 @@ module ID_stage(
     output wire [11:0] csr_raddr,
     input  wire [31:0] csr_rdata,
 
-    input wire ex,
+    input wire wb_ex,
     //csr读写冲突处理,手册上说只用阻塞处理，所以并不需要传写掩码和写数据，只有12位num和1位使能
     input wire [12:0] es_csr_conflict_bus,
     input wire [12:0] ms_csr_conflict_bus,
     input wire [12:0] ws_csr_conflict_bus
 );
-    reg ex_r_now , ex_r_previous;
-    wire ex_flush = ex_r_now && !ex_r_previous;
-    always @(posedge clk) begin
-        if (reset) begin
-            ex_r_now <= 1'b0;
-            ex_r_previous <= 1'b0;
-        end else begin
-            ex_r_previous <= ex_r_now;
-            ex_r_now <= ex;
-        end
-    end
 // 异常处理
 wire        if_ex;
 wire [5:0] if_ecode;
@@ -464,10 +453,10 @@ assign ms_csr_hazard = ms_to_ws_valid && ms_csr_conflict_bus[12] && (ms_csr_conf
 assign ws_csr_hazard = ws_to_rf_valid && ws_csr_conflict_bus[12] && (ws_csr_conflict_bus[11:0] == csr_write_num);
 assign ds_ready_go = reset || !load_data_hazard && !es_csr_hazard && !ms_csr_hazard && !ws_csr_hazard;
 // 是否是写指令，且是否寄存器值相等
-assign ds_allowin      = !ds_valid || ds_ready_go && es_allowin || ex_flush;
-assign ds_to_es_valid  = ds_valid && ds_ready_go && !ex_flush;
+assign ds_allowin      = !ds_valid || ds_ready_go && es_allowin;
+assign ds_to_es_valid  = ds_valid && ds_ready_go && !wb_ex;
 always @(posedge clk) begin
-    if (reset || ex_flush) begin
+    if (reset || wb_ex) begin
         ds_valid <= 1'b0;
         fs_to_ds_bus_r <= 0;
     end

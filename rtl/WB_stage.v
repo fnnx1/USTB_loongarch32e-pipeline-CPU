@@ -18,20 +18,9 @@ module WB_stage(
     output wire [31:0] debug_wb_rf_wdata,
     output wire        ws_to_rf_valid,
 
-    input wire ex
+    input wire wb_ex
     
 );
-    reg ex_r_now, ex_r_previous;
-    wire ex_flush = ex_r_now && !ex_r_previous;
-    always @(posedge clk) begin
-        if (reset) begin
-            ex_r_now <= 1'b0;
-            ex_r_previous <= 1'b0;
-        end else begin
-            ex_r_previous <= ex_r_now;
-            ex_r_now <= ex;
-        end
-    end
 
     //异常处理
     wire ws_ex;
@@ -94,7 +83,7 @@ module WB_stage(
     assign debug_wb_rf_wnum  = ws_valid ? ms_to_ws_bus_r[69:65] : 5'b0;
     assign debug_wb_rf_wdata = ws_valid ? ws_to_rf_bus[31:0] : 32'b0;
     always @(posedge clk) begin
-        if (reset || ex_flush) begin
+        if (reset || wb_ex) begin
             ws_valid <= 1'b0;
             ms_to_ws_bus_r <= 0;
         end else begin

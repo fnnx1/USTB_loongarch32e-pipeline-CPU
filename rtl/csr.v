@@ -275,6 +275,6 @@ module csr(
             default:     csr_rdata = 32'b0;
         endcase
     end
-
+    assign ex_entry = {csr_eentry_va, 6'b0};
     assign csr_rvalue = csr_re ? csr_rdata : 32'b0;
 endmodule

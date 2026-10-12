@@ -113,7 +113,7 @@ module mycpu_top(
         .inst_sram_wdata(inst_sram_wdata),
         .inst_sram_rdata(inst_sram_rdata),
         .ex_pc(ex_entry),
-        .ex(wb_ex)
+        .wb_ex(wb_ex)
     );
 
     // 译码
@@ -142,7 +142,7 @@ module mycpu_top(
         .es_to_ms_valid(es_to_ms_valid),
         .ms_to_ws_valid(ms_to_ws_valid),
         .ws_to_rf_valid(ws_valid),
-        .ex(wb_ex),
+        .wb_ex(wb_ex),
         .es_csr_conflict_bus(es_csr_conflict_bus),
         .ms_csr_conflict_bus(ms_csr_conflict_bus),
         .ws_csr_conflict_bus(ws_csr_conflict_bus)
@@ -165,7 +165,7 @@ module mycpu_top(
         .data_sram_addr(data_sram_addr),
         .data_sram_wdata(data_sram_wdata),
         .data_sram_we(data_sram_we),
-        .ex(wb_ex)
+        .wb_ex(wb_ex)
     );
 
     MEM_stage mem_stage(
@@ -181,7 +181,7 @@ module mycpu_top(
         .ms_to_ws_valid(ms_to_ws_valid),  //告知下一级数据是否有效
         .ms_to_ws_bus(ms_to_ws_bus),   //写回缓冲区
         .data_sram_rdata(data_sram_rdata),
-        .ex(wb_ex)
+        .wb_ex(wb_ex)
     );
 
     WB_stage wb_stage(
@@ -201,6 +201,6 @@ module mycpu_top(
         .debug_wb_rf_wnum(debug_wb_rf_wnum),
         .debug_wb_rf_wdata(debug_wb_rf_wdata),
         .ws_to_rf_valid(ws_valid),
-        .ex(wb_ex)
+        .wb_ex(wb_ex)
     );
 endmodule
