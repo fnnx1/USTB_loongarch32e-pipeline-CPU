@@ -157,6 +157,7 @@ wire        inst_csrrd;
 wire        inst_csrxchg;
 wire        inst_syscall;
 wire        inst_ertn;
+wire        inst_break;
 
 wire        need_ui5;
 wire        need_si12;
@@ -178,12 +179,14 @@ wire [31:0] mem_result;
 wire [31:0] final_result;
 
 //如果上一级是异常指令
-assign ds_ex = if_ex | inst_syscall;
+assign ds_ex = if_ex | inst_syscall | inst_break;
 assign ds_excode = if_ex ? if_ecode :
                     inst_syscall ? `ECODE_SYS :
+                    inst_break ? `ECODE_BRK :
                     6'b0;
 assign ds_esubcode = if_ex ? if_esubcode : 
                     inst_syscall ? `ESUBCODE_SYS:
+                    inst_break ? `ESUBCODE_BRK:
                     9'b0;
 
 assign op_31_26  = ds_inst[31:26];
@@ -265,6 +268,7 @@ assign inst_csrwr = op_31_26_d[6'h01] & op_25_24_d[2'h0] & ds_inst[9:5] == 5'h1;
 assign inst_csrrd = op_31_26_d[6'h01] & op_25_24_d[2'h0] & ds_inst[9:5] == 5'h0;
 assign inst_syscall = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & op_19_15_d[5'h16];
 assign inst_ertn = op_31_26_d[6'h01] & op_25_22_d[4'h9] & op_21_20_d[2'h0] & op_19_15_d[5'h10] & op_14_10_d[5'he] & op_9_5_d[5'h0] & op_4_0_d[5'h0];
+assign inst_break = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & op_19_15_d[5'h14];
 
 assign alu_op[ 0] = inst_add_w | inst_addi_w | inst_ld_w | inst_ld_b | inst_st_w | inst_st_b | inst_st_h
                     | inst_jirl | inst_bl | inst_pcaddu12i | inst_ld_h | inst_ld_bu | inst_ld_hu;
@@ -351,7 +355,7 @@ assign dest          = dst_is_r1 ? 5'd1 : rd;
 assign csr_re = inst_csrxchg | inst_csrwr | inst_csrrd | inst_syscall;
 assign csr_we = inst_csrxchg | inst_csrwr | inst_csrrd; 
 //这里给csrrd写使能是因为，csr_we在ES级用于交换csr和rd的值，读指令也需要写回rd，只是不写csr，因此下文mask置全0即可
-assign csr_raddr = inst_syscall ? `CSR_EENTRY : ds_inst[21:10];
+assign csr_raddr = ds_inst[21:10];
 assign csr_write_num = csr_we ? csr_raddr : 12'd0;
 assign csr_wmask = inst_csrxchg ? rj_value :
                    inst_csrwr ? 32'hFFFFFFFF : 32'h0;

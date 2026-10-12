@@ -41,6 +41,7 @@
     `define ECODE_FPE 6'h0F
     `define ECODE_TLBR 6'h3F
 
+    `define ESUBCODE_BRK 9'h000
     `define ESUBCODE_SYS 9'h000
     `define ESUBCODE_ADEF 9'h000
     `define ESUBCODE_ADEM 9'h001
