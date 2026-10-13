@@ -19,7 +19,7 @@ module EX_stage(
     output wire [3:0]  data_sram_we,     //数据内存对应字节访问使能
 
     input wire         has_ex,  //无条件例外
-    input wire         has_int,
+    input wire         int_flush,
     input wire         ertn_flush,
 
     //处理异常和访存的冲突
@@ -55,7 +55,7 @@ module EX_stage(
     assign es_allowin      = !es_valid || es_ready_go && ms_allowin;
     assign es_to_ms_valid  = es_valid && es_ready_go;
     always @(posedge clk) begin
-        if (reset || has_ex || has_int || ertn_flush) begin
+        if (reset || has_ex || int_flush || ertn_flush) begin
             es_valid <= 1'b0;
             ds_to_es_bus_r <= 0;
         end else begin
@@ -211,7 +211,7 @@ module EX_stage(
 
     assign mem_addr_offset = alu_result[1:0];   //内存地址的偏移量
 
-    assign es_ready_go = has_int || has_ex ||
+    assign es_ready_go = int_flush || has_ex ||
                         !exception_st_conflict && ((!div_signed && !div_unsigned) || (div_signed && div_result_signed_valid) || (div_unsigned && div_result_unsigned_valid));
     wire [31:0] div_mod_result;
     assign div_mod_result = div_signed ? (inst_div_w ? div_result_signed[63:32] : (inst_mod_w ? div_result_signed[31:0] : alu_result)) 

@@ -19,7 +19,7 @@ module WB_stage(
     output wire        ws_to_rf_valid,
 
     input wire has_ex,  //无条件例外
-    input wire has_int,
+    input wire int_flush,
     input wire ertn_flush
     
 );
@@ -54,7 +54,7 @@ module WB_stage(
 
     reg ws_ex_r; //是否上一条指令发生过异常
     always @(posedge clk) begin
-        if (reset || has_ex || has_int || ertn_flush) begin
+        if (reset || has_ex || int_flush || ertn_flush) begin
             ws_ex_r <= 1'b0;
         end else if (ws_ex) begin
             ws_ex_r <= 1'b1;
@@ -96,7 +96,7 @@ module WB_stage(
     assign debug_wb_rf_wnum  = ws_valid ? ms_to_ws_bus_r[69:65] : 5'b0;
     assign debug_wb_rf_wdata = ws_valid ? ws_to_rf_bus[31:0] : 32'b0;
     always @(posedge clk) begin
-        if (reset || has_ex || has_int || ertn_flush) begin
+        if (reset || has_ex || int_flush || ertn_flush) begin
             ws_valid <= 1'b0;
             ms_to_ws_bus_r <= 0;
         end else begin

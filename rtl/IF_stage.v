@@ -16,7 +16,7 @@ module IF_stage(
 
     input wire [31:0] ex_pc,
     input wire has_ex,  //无条件例外
-    input wire has_int,
+    input wire int_flush,
     input wire ertn_flush,
     input wire [31:0] ertn_entry
 );
@@ -59,7 +59,7 @@ module IF_stage(
     assign to_fs_valid = ~reset;
     assign seq_pc = fs_pc + 3'h4; //顺序
     //哇恶意满满啊，后面甚至接着的第二个周期是个跳转指令，你无敌了计组课设
-    assign next_pc = (has_ex || has_int) ? ex_pc :
+    assign next_pc = (has_ex || int_flush) ? ex_pc :
                     (ertn_flush) ? ertn_entry :
                     (br_taken == 1 ) ? br_target :
                     seq_pc;

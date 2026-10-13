@@ -63,6 +63,23 @@ module mycpu_top(
     wire [31:0] ex_entry;   //异常入口地址 
     wire        has_ex;    //无条件例外
     wire        has_int; 
+
+    //触发器，防止has_int持久刷新
+    reg int_flush_p;
+    reg int_flush_c;
+    wire int_flush;
+    assign int_flush = !int_flush_p && int_flush_c;
+    always @(posedge clk) begin
+        if (reset) begin
+            int_flush_p <= 1'b0;
+            int_flush_c <= 1'b0;
+        end
+        else begin
+            int_flush_p <= int_flush_c;
+            int_flush_c <= has_int;
+        end
+    end
+
     wire        ertn_flush; //异常返回刷新信号
     wire [31:0] ertn_entry;
     wire        wb_ex;      //写回阶段异常信号
@@ -125,7 +142,7 @@ module mycpu_top(
         .inst_sram_rdata(inst_sram_rdata),
         .ex_pc(ex_entry),
         .has_ex(has_ex),
-        .has_int(has_int),
+        .int_flush(int_flush),
         .ertn_flush(ertn_flush),
         .ertn_entry(ertn_entry)
     );
@@ -157,7 +174,7 @@ module mycpu_top(
         .ms_to_ws_valid(ms_to_ws_valid),
         .ws_to_rf_valid(ws_valid),
         .has_ex(has_ex),
-        .has_int(has_int),
+        .int_flush(int_flush),
         .ertn_flush(ertn_flush),
         .es_csr_conflict_bus(es_csr_conflict_bus),
         .ms_csr_conflict_bus(ms_csr_conflict_bus),
@@ -181,7 +198,7 @@ module mycpu_top(
         .data_sram_addr(data_sram_addr),
         .data_sram_wdata(data_sram_wdata),
         .data_sram_we(data_sram_we),
-        .has_int(has_int),
+        .int_flush(int_flush),
         .ertn_flush(ertn_flush),
         .ms_ex(ms_ex),
         .ms_to_ws_valid(ms_to_ws_valid),
@@ -204,7 +221,7 @@ module mycpu_top(
         .ms_to_ws_bus(ms_to_ws_bus),   //写回缓冲区
         .data_sram_rdata(data_sram_rdata),
         .has_ex(has_ex),
-        .has_int(has_int),
+        .int_flush(int_flush),
         .ertn_flush(ertn_flush),
         .mem_ex(ms_ex)
     );
@@ -227,7 +244,7 @@ module mycpu_top(
         .debug_wb_rf_wdata(debug_wb_rf_wdata),
         .ws_to_rf_valid(ws_valid),
         .has_ex(has_ex),
-        .has_int(has_int),
+        .int_flush(int_flush),
         .ertn_flush(ertn_flush)
     );
 endmodule
