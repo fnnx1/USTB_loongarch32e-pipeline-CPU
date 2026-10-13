@@ -51,15 +51,6 @@ module WB_stage(
     assign ws_ready_go     = 1'b1;
     //最后一级, 没有下游 allowin
     assign ws_allowin      = !ws_valid || ws_ready_go;
-
-    reg ws_ex_r; //是否上一条指令发生过异常
-    always @(posedge clk) begin
-        if (reset || has_ex || int_flush || ertn_flush) begin
-            ws_ex_r <= 1'b0;
-        end else if (ws_ex) begin
-            ws_ex_r <= 1'b1;
-        end
-    end
    
     // ws_to_rf_bus 总位宽 = 1+6+9+1+1+5+32 = 55 bit
     assign ws_to_rf_bus = {
@@ -96,7 +87,7 @@ module WB_stage(
     assign debug_wb_rf_wnum  = ws_valid ? ms_to_ws_bus_r[69:65] : 5'b0;
     assign debug_wb_rf_wdata = ws_valid ? ws_to_rf_bus[31:0] : 32'b0;
     always @(posedge clk) begin
-        if (reset || has_ex || int_flush || ertn_flush) begin
+        if (reset || has_ex || ertn_flush) begin
             ws_valid <= 1'b0;
             ms_to_ws_bus_r <= 0;
         end else begin

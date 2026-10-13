@@ -15,6 +15,7 @@ module csr(
     output wire [31:0] ertn_entry,
     output wire has_ex,  //无条件例外
     output wire has_int,
+    input wire int_flush,  //中断刷新信号
     input wire ertn_flush,
     input wire wb_ex,
     input wire [5:0] wb_ecode,
@@ -141,6 +142,7 @@ module csr(
     always @(posedge clk) begin
         if (wb_ex)
             csr_era_pc <= wb_pc;
+        else if (int_flush)
         else if (csr_we && csr_waddr==`CSR_ERA)
             csr_era_pc <= csr_wmask[`CSR_ERA_PC]&csr_wvalue[`CSR_ERA_PC]
                         | ~csr_wmask[`CSR_ERA_PC]&csr_era_pc;

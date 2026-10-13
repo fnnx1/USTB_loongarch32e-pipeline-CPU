@@ -66,17 +66,14 @@ module mycpu_top(
 
     //触发器，防止has_int持久刷新
     reg int_flush_p;
-    reg int_flush_c;
     wire int_flush;
-    assign int_flush = !int_flush_p && int_flush_c;
+    assign int_flush = !int_flush_p && has_int;
     always @(posedge clk) begin
         if (reset) begin
             int_flush_p <= 1'b0;
-            int_flush_c <= 1'b0;
         end
         else begin
-            int_flush_p <= int_flush_c;
-            int_flush_c <= has_int;
+            int_flush_p <= has_int;
         end
     end
 
@@ -115,8 +112,9 @@ module mycpu_top(
         .hw_int_in(hw_int_in),
         .ipi_int_in(ipi_int_in),
         .ex_entry(ex_entry),
-        .has_ex(has_ex),
+        .has_ex(has_ex),    //无条件异常
         .has_int(has_int),
+        .int_flush(int_flush),  //中断刷新信号
         .ertn_flush(ertn_flush),
         .ertn_entry(ertn_entry),
         .wb_ex(wb_ex),

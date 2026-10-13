@@ -481,7 +481,7 @@ assign ds_to_es_valid  = ds_valid && ds_ready_go && !int_flush;
 //这里使用es_allow_in是防止当前为syscall，上一个指令是div等需要等待的指令还在流水线中，导致取指暂停，异常指令被吞掉
 // ds_ready_go 防止load_use冒险导致的取指暂停，反正是要确保异常指令能不被刷新，能传到下一级
 always @(posedge clk) begin
-    if (reset || int_flush || ertn_flush || has_ex) begin
+    if (reset || ertn_flush || has_ex) begin
         ds_valid <= 1'b0;
         fs_to_ds_bus_r <= 0;
     end
