@@ -41,9 +41,10 @@ module IF_stage(
     wire [31:0] fs_inst; //fs阶段的inst和pc,往后传递
     reg [31:0] fs_pc;
 
-    assign if_ex = 1'b0; //暂时没有异常处理
-    assign if_ecode = 6'b0;
-    assign if_esubcode = 9'b0;
+    wire is_ADEF;
+    assign if_ex = is_ADEF; //暂时没有异常处理
+    assign if_ecode = is_ADEF ? `ECODE_ADE : 6'b0;
+    assign if_esubcode = is_ADEF ? `ESUBCODE_ADEF : 9'b0;
     assign {br_taken,br_target} = br_bus; //跳转信号传递
 
     //if向id传递的bus
@@ -62,7 +63,7 @@ module IF_stage(
                     (br_taken == 1 ) ? br_target :
                     seq_pc;
 
-
+    assign is_ADEF = next_pc[1:0] != 2'b0;
     //IF stage
     assign fs_ready_go = 1'b1; //可以传输
     assign fs_allowin = !fs_valid || fs_ready_go && ds_allowin; 
@@ -93,6 +94,6 @@ module IF_stage(
     assign inst_sram_addr = next_pc;
     assign inst_sram_wdata = 32'b0;
 
-    assign fs_inst = inst_sram_rdata;
+    assign fs_inst = is_ADEF ? 32'b0 : inst_sram_rdata;
 
 endmodule

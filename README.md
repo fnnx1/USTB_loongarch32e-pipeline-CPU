@@ -107,3 +107,4 @@ WARNING: Too many words specified in data file ../../../../../../../../func/obj/
 1c074d40:	00000000 	0x00000000
 ```
 9. 完成指令不存在异常INE
+10. 完成取指错误异常ADE

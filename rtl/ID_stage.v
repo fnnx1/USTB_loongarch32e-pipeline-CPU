@@ -161,6 +161,7 @@ wire        inst_ertn;
 wire        inst_break;
 
 wire        unsupport_inst;//但你怎么知道指令是不存在还是你没实现呢（？
+wire        is_ADEF;//在译码阶段判断地址错误异常
 
 wire        need_ui5;
 wire        need_si12;
@@ -202,16 +203,18 @@ wire ms_csr_hazard;
 wire ws_csr_hazard;
 
 //如果上一级是异常指令
-assign ds_ex = if_ex | inst_syscall | inst_break | unsupport_inst;
+assign ds_ex = if_ex | inst_syscall | inst_break | unsupport_inst | is_ADEF;
 assign ds_excode = if_ex ? if_ecode :
                     inst_syscall ? `ECODE_SYS :
                     inst_break ? `ECODE_BRK :
                     unsupport_inst ? `ECODE_INE :
+                    is_ADEF ? `ECODE_ADE :
                     6'b0;
 assign ds_esubcode = if_ex ? if_esubcode : 
                     inst_syscall ? `ESUBCODE_SYS:
                     inst_break ? `ESUBCODE_BRK:
                     unsupport_inst ? `ESUBCODE_INE:
+                    is_ADEF ? `ESUBCODE_ADEF:
                     9'b0;
 
 assign op_31_26  = ds_inst[31:26];
@@ -434,9 +437,10 @@ assign br_taken = (  inst_beq  &&  rj_eq_rd
                   || inst_jirl
                   || inst_bl
                   || inst_b
-                  ) && ds_valid && ds_ready_go;
+                  ) && ds_valid && ds_ready_go && !is_ADEF;
 assign br_target = (inst_beq || inst_bne || inst_blt || inst_bl || inst_b || inst_bge || inst_bltu || inst_bgeu) ? (ds_pc + br_offs) :
                                                    /*inst_jirl*/ (rj_value + jirl_offs);
+assign is_ADEF = (ds_pc[1:0] != 2'b0);
 
 assign br_bus = {br_taken , br_target};
 
