@@ -20,15 +20,11 @@ module IF_stage(
     input wire ertn_flush,
     input wire [31:0] ertn_entry
 );
+
     //异常输出处理
     wire if_ex; //if阶段的异常信号
     wire [5:0] if_ecode; //if阶段的异常码
     wire [8:0] if_esubcode; //if阶段的异常子码
-
-    assign if_ex = 1'b0; //暂时没有异常处理
-    assign if_ecode = 6'b0;
-    assign if_esubcode = 9'b0;
-
 
     //if级握手信号
     reg         fs_valid;
@@ -42,10 +38,13 @@ module IF_stage(
     wire br_taken; //跳转信号
     wire [31:0] br_target;//跳转地址
 
-    assign {br_taken,br_target} = br_bus; //跳转信号传递
-
     wire [31:0] fs_inst; //fs阶段的inst和pc,往后传递
     reg [31:0] fs_pc;
+
+    assign if_ex = 1'b0; //暂时没有异常处理
+    assign if_ecode = 6'b0;
+    assign if_esubcode = 9'b0;
+    assign {br_taken,br_target} = br_bus; //跳转信号传递
 
     //if向id传递的bus
     // fs_to_ds_bus 总位宽 = 1+6+9+32+32 = 80 bit
@@ -58,11 +57,11 @@ module IF_stage(
     //pre-if stage
     assign to_fs_valid = ~reset;
     assign seq_pc = fs_pc + 3'h4; //顺序
-    //哇恶意满满啊，后面甚至接着的第二个周期是个跳转指令，你无敌了计组课设
     assign next_pc = (has_ex || int_flush) ? ex_pc :
                     (ertn_flush) ? ertn_entry :
                     (br_taken == 1 ) ? br_target :
                     seq_pc;
+
 
     //IF stage
     assign fs_ready_go = 1'b1; //可以传输
@@ -71,6 +70,7 @@ module IF_stage(
     //br_taken 有效时, 本拍正要送往 ds 的那条指令属于跳转后的顺序路径(错误路径), 必须作废
     assign fs_to_ds_valid = fs_valid && fs_ready_go && !br_taken;
 
+
     always@(posedge clk)begin
         if(reset)begin
             fs_valid <= 1'b0;
@@ -78,6 +78,7 @@ module IF_stage(
             fs_valid <= to_fs_valid;
         end
     end
+
 
     always@(posedge clk)begin
         if(reset)begin

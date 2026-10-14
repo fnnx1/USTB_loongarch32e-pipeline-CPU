@@ -29,19 +29,13 @@ module EX_stage(
     input wire         wb_ex
 );
 
-    //异常处理
     wire es_ex; //ex阶段的异常信号
     wire [5:0] es_excode; //ex阶段的异常码
     wire [8:0] es_esubcode; //ex阶段的异常子码
-    
     wire ds_ex; //ds阶段的异常信号
     wire [5:0] ds_excode; //ds阶段的异常码
     wire [8:0] ds_esubcode; //ds阶段的异常子码
 
-    assign es_ex = ds_ex;
-    assign es_excode = ds_excode;
-    assign es_esubcode = ds_esubcode;
-    //CSR相关信号
     wire [11:0] csr_write_num;
     wire [31:0] csr_wmask;
     wire csr_ertn;
@@ -51,20 +45,6 @@ module EX_stage(
     reg es_valid;
     reg [`DS_TO_ES_BUS_WD -1 :0] ds_to_es_bus_r;
     wire es_ready_go;
-
-    assign es_allowin      = !es_valid || es_ready_go && ms_allowin;
-    assign es_to_ms_valid  = es_valid && es_ready_go;
-    always @(posedge clk) begin
-        if (reset || has_ex || ertn_flush) begin
-            es_valid <= 1'b0;
-            ds_to_es_bus_r <= 0;
-        end else begin
-            if (es_allowin)
-                es_valid <= ds_to_es_valid;
-            if (ds_to_es_valid && es_allowin)
-                ds_to_es_bus_r <= ds_to_es_bus;
-        end
-    end
 
     wire inst_mod_wu;
     wire inst_mod_w;
@@ -90,6 +70,46 @@ module EX_stage(
     wire        res_from_mem;
     wire [31:0] sram_wdata;
     wire [3:0] sram_we;
+
+    wire [31:0] alu_src1;
+    wire [31:0] alu_src2;
+
+    wire dividend_valid;
+    wire divisor_valid;
+    wire dividend_ready_signed;
+    wire divisor_ready_signed;
+    wire dividend_ready_unsigned;
+    wire divisor_ready_unsigned;
+    wire [63:0] div_result;
+    wire div_result_valid;
+    wire [63:0] div_result_unsigned;
+    wire div_result_unsigned_valid;
+    wire [63:0] div_result_signed;
+    wire div_result_signed_valid;
+    wire div_signed = inst_div_w || inst_mod_w;     //选择用哪个除法器
+    wire div_unsigned = inst_div_wu || inst_mod_wu;
+    reg div_input_sent;     //用于置valid为0
+    wire div_input_fire;    //是否完成握手
+
+    wire exception_st_conflict;
+    wire [31:0] div_mod_result;
+
+    assign es_ex = ds_ex;
+    assign es_excode = ds_excode;
+    assign es_esubcode = ds_esubcode;
+    assign es_allowin      = !es_valid || es_ready_go && ms_allowin;
+    assign es_to_ms_valid  = es_valid && es_ready_go;
+    always @(posedge clk) begin
+        if (reset || has_ex || ertn_flush) begin
+            es_valid <= 1'b0;
+            ds_to_es_bus_r <= 0;
+        end else begin
+            if (es_allowin)
+                es_valid <= ds_to_es_valid;
+            if (ds_to_es_valid && es_allowin)
+                ds_to_es_bus_r <= ds_to_es_bus;
+        end
+    end
 
     assign {
             csr_ertn,
@@ -120,8 +140,6 @@ module EX_stage(
             ds_pc,
             res_from_mem} = ds_to_es_bus_r;
 
-    wire [31:0] alu_src1;
-    wire [31:0] alu_src2;
     assign alu_src1 = src1_is_pc  ? ds_pc[31:0] : rj_value;
     assign alu_src2 = src2_is_imm ? imm : rkd_value;
 
@@ -134,23 +152,6 @@ module EX_stage(
     );
 
     
-    wire dividend_valid;
-    wire divisor_valid;
-    wire dividend_ready_signed;
-    wire divisor_ready_signed;
-    wire dividend_ready_unsigned;
-    wire divisor_ready_unsigned;
-    wire [63:0] div_result;
-    wire div_result_valid;
-    wire [63:0] div_result_unsigned;
-    wire div_result_unsigned_valid;
-    wire [63:0] div_result_signed;
-    wire div_result_signed_valid;
-
-    wire div_signed = inst_div_w || inst_mod_w;     //选择用哪个除法器
-    wire div_unsigned = inst_div_wu || inst_mod_wu;
-    reg div_input_sent;     //用于置valid为0
-    wire div_input_fire;    //是否完成握手
     assign div_input_fire = dividend_valid && (div_signed ? dividend_ready_signed : dividend_ready_unsigned)
                         && divisor_valid  && (div_signed ? divisor_ready_signed : divisor_ready_unsigned);
     always @(posedge clk) begin
@@ -190,7 +191,6 @@ module EX_stage(
          .m_axis_dout_tdata       (div_result_unsigned),       // output
          .m_axis_dout_tvalid      (div_result_unsigned_valid)  // output
     );
-    wire exception_st_conflict;
     // 当内存访问阶段或写回阶段发生异常且store使能时，发生冲突
     assign exception_st_conflict = (ms_to_ws_valid && ms_ex && data_sram_en) || (ws_to_rf_valid && wb_ex && data_sram_en);
 
@@ -213,7 +213,6 @@ module EX_stage(
 
     assign es_ready_go = int_flush || has_ex ||
                         !exception_st_conflict && ((!div_signed && !div_unsigned) || (div_signed && div_result_signed_valid) || (div_unsigned && div_result_unsigned_valid));
-    wire [31:0] div_mod_result;
     assign div_mod_result = div_signed ? (inst_div_w ? div_result_signed[63:32] : (inst_mod_w ? div_result_signed[31:0] : alu_result)) 
                         : (div_unsigned ? (inst_div_wu ? div_result_unsigned[63:32] : (inst_mod_wu ? div_result_unsigned[31:0] : alu_result)) : alu_result);
     //csrxchange交换逻辑

@@ -179,6 +179,26 @@ wire [31:0] alu_result;
 wire [31:0] mem_result;
 wire [31:0] final_result;
 
+wire rf_we ; //写使能
+wire [4:0] rf_waddr;
+wire [31:0] rf_wdata;
+
+wire es_match_rj = es_to_ms_valid && es_dest[37] && (es_dest[36:32] == rf_raddr1) && (rf_raddr1 != 5'd0);
+wire es_match_rkd = es_to_ms_valid && es_dest[37] && (es_dest[36:32] == rf_raddr2) && (rf_raddr2 != 5'd0);
+wire ms_match_rj = ms_to_ws_valid && ms_dest[37] && (ms_dest[36:32] == rf_raddr1) && (rf_raddr1 != 5'd0);
+wire ms_match_rkd = ms_to_ws_valid && ms_dest[37] && (ms_dest[36:32] == rf_raddr2) && (rf_raddr2 != 5'd0);
+wire ws_match_rj = ws_to_rf_valid && ws_to_rf_bus[37] && (ws_to_rf_bus[36:32] == rf_raddr1) && (rf_raddr1 != 5'd0);
+wire ws_match_rkd = ws_to_rf_valid && ws_to_rf_bus[37] && (ws_to_rf_bus[36:32] == rf_raddr2) && (rf_raddr2 != 5'd0);
+
+reg [`FS_TO_DS_BUS_WD -1 :0] fs_to_ds_bus_r;
+
+wire es_load_hazard =  es_to_ms_valid && es_dest[38] && (es_match_rj || es_match_rkd);
+wire ms_load_hazard =  ms_to_ws_valid && ms_dest[38] && (ms_match_rj || ms_match_rkd);
+wire load_data_hazard = es_load_hazard || ms_load_hazard;
+wire es_csr_hazard;
+wire ms_csr_hazard;
+wire ws_csr_hazard;
+
 //如果上一级是异常指令
 assign ds_ex = if_ex | inst_syscall | inst_break;
 assign ds_excode = if_ex ? if_ecode :
@@ -365,10 +385,6 @@ assign csr_ertn = inst_ertn;
 assign rf_raddr1 = rj;
 assign rf_raddr2 = src_reg_is_rd ? rd :rk;
 
-wire rf_we ; //写使能
-wire [4:0] rf_waddr;
-wire [31:0] rf_wdata;
-
 assign rf_we = !reset && ws_to_rf_bus[37];
 assign rf_waddr = ws_to_rf_bus[36:32];
 assign rf_wdata = ws_to_rf_bus[31:0];
@@ -385,13 +401,6 @@ regfile u_regfile(
 );
 
 //冲突信号
-wire es_match_rj = es_to_ms_valid && es_dest[37] && (es_dest[36:32] == rf_raddr1) && (rf_raddr1 != 5'd0);
-wire es_match_rkd = es_to_ms_valid && es_dest[37] && (es_dest[36:32] == rf_raddr2) && (rf_raddr2 != 5'd0);
-wire ms_match_rj = ms_to_ws_valid && ms_dest[37] && (ms_dest[36:32] == rf_raddr1) && (rf_raddr1 != 5'd0);
-wire ms_match_rkd = ms_to_ws_valid && ms_dest[37] && (ms_dest[36:32] == rf_raddr2) && (rf_raddr2 != 5'd0);
-wire ws_match_rj = ws_to_rf_valid && ws_to_rf_bus[37] && (ws_to_rf_bus[36:32] == rf_raddr1) && (rf_raddr1 != 5'd0);
-wire ws_match_rkd = ws_to_rf_valid && ws_to_rf_bus[37] && (ws_to_rf_bus[36:32] == rf_raddr2) && (rf_raddr2 != 5'd0);
-
 assign rj_value = (es_match_rj && !es_dest[38]) ? es_dest[31:0] :
                   (ms_match_rj && !ms_dest[38]) ? ms_dest[31:0] :
                   ws_match_rj ? ws_to_rf_bus[31:0] : rf_rdata1;
@@ -417,18 +426,12 @@ assign br_target = (inst_beq || inst_bne || inst_blt || inst_bl || inst_b || ins
 
 assign br_bus = {br_taken , br_target};
 
-reg [`FS_TO_DS_BUS_WD -1 :0] fs_to_ds_bus_r;
 assign {
         if_ex,
         if_excode,
         if_esubcode,
         ds_inst,
         ds_pc} = fs_to_ds_bus_r;
-
-/*assign {rf_we, //37:37
-        rf_waddr, //36:32
-        rf_wdata //31:0
-       } = ws_to_rf_bus;*/
 
 // ds_to_es_bus 总位宽 = 256 bit
 assign ds_to_es_bus = {
@@ -460,14 +463,6 @@ assign ds_to_es_bus = {
                         ds_pc        ,  //[ 32:  1] 32 bit
                         res_from_mem    //[  0]      1 bit
                       };
-
-wire es_load_hazard =  es_to_ms_valid && es_dest[38] && (es_match_rj || es_match_rkd);
-wire ms_load_hazard =  ms_to_ws_valid && ms_dest[38] && (ms_match_rj || ms_match_rkd);
-wire load_data_hazard = es_load_hazard || ms_load_hazard;
-
-wire es_csr_hazard;
-wire ms_csr_hazard;
-wire ws_csr_hazard;
 
 assign es_csr_hazard = es_to_ms_valid && es_csr_conflict_bus[12] && (es_csr_conflict_bus[11:0] == csr_write_num);
 assign ms_csr_hazard = ms_to_ws_valid && ms_csr_conflict_bus[12] && (ms_csr_conflict_bus[11:0] == csr_write_num);

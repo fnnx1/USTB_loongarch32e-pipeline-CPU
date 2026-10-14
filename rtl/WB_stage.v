@@ -37,17 +37,7 @@ module WB_stage(
     reg ws_valid;
     reg [`MS_TO_WS_BUS_WD -1 :0] ms_to_ws_bus_r;
     wire ws_ready_go;
-    /*assign es_to_mem_bus = {gr_we,  //写寄存器使能
-                            dest,  //写寄存器地址
-                            
-                            load_op,  //load指令
-                            res_from_mem,  //结果是否来自内存
 
-                            mem_we,  //写内存使能
-                            rkd_value,  //写内存数据
-                            alu_result,  //alu计算结果
-                            ds_pc  //当前指令的pc,用于debug
-                            };*/
     assign ws_ready_go     = 1'b1;
     //最后一级, 没有下游 allowin
     assign ws_allowin      = !ws_valid || ws_ready_go;

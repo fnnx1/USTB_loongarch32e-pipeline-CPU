@@ -27,8 +27,8 @@ module mycpu_top(
     output wire [ 4:0] debug_wb_rf_wnum,    //写入的寄存器号
     output wire [31:0] debug_wb_rf_wdata    //写入数据
 );
+
     wire reset;
-    assign reset = ~resetn; //复位信号
     wire        ds_allowin, es_allowin, ms_allowin, ws_allowin;
     wire        fs_to_ds_valid, ds_to_es_valid, es_to_ms_valid, ms_to_ws_valid, ws_valid;
 
@@ -39,15 +39,11 @@ module mycpu_top(
     wire [`MS_TO_WS_BUS_WD -1:0] ms_to_ws_bus;
     wire [`WS_TO_RF_BUS_WD -1:0] ws_to_rf_bus;
     wire [`WS_TO_CSR_BUS_WD -1:0] ws_to_csr_bus;
+
     // CSR冲突总线格式：{CSR写使能, CSR写地址}
     wire [12:0] es_csr_conflict_bus;
     wire [12:0] ms_csr_conflict_bus;
     wire [12:0] ws_csr_conflict_bus;
-
-    assign es_csr_conflict_bus = {es_to_ms_bus[156], es_to_ms_bus[200:189]};
-    assign ms_csr_conflict_bus = {ms_to_ws_bus[120], ms_to_ws_bus[164:153]};
-    assign ws_csr_conflict_bus = {ws_to_csr_bus[32], ws_to_csr_bus[76:65]};
-
 
     wire        csr_re;     //读使能
     wire [11:0] csr_raddr;  //ID阶段CSR读地址
@@ -58,25 +54,11 @@ module mycpu_top(
     wire [31:0] csr_rvalue; //读出值
     wire        wb_csr_we;
 
-
-
     wire [31:0] ex_entry;   //异常入口地址 
     wire        has_ex;    //无条件例外
     wire        has_int; 
-
-    //触发器，防止has_int持久刷新
     reg int_flush_p;
     wire int_flush;
-    assign int_flush = !int_flush_p && has_int;
-    always @(posedge clk) begin
-        if (reset) begin
-            int_flush_p <= 1'b0;
-        end
-        else begin
-            int_flush_p <= has_int;
-        end
-    end
-
     wire        ertn_flush; //异常返回刷新信号
     wire [31:0] ertn_entry;
     wire        wb_ex;      //写回阶段异常信号
@@ -88,6 +70,22 @@ module mycpu_top(
     wire [7:0]  hw_int_in;  //硬件中断输入
     wire        ipi_int_in; //IPI中断输入 ioctl
     wire        coreid_in;  //核心ID输入
+
+    assign reset = ~resetn; //复位信号
+    assign es_csr_conflict_bus = {es_to_ms_bus[156], es_to_ms_bus[200:189]};
+    assign ms_csr_conflict_bus = {ms_to_ws_bus[120], ms_to_ws_bus[164:153]};
+    assign ws_csr_conflict_bus = {ws_to_csr_bus[32], ws_to_csr_bus[76:65]};
+
+    //触发器，防止has_int持久刷新
+    assign int_flush = !int_flush_p && has_int;
+    always @(posedge clk) begin
+        if (reset) begin
+            int_flush_p <= 1'b0;
+        end
+        else begin
+            int_flush_p <= has_int;
+        end
+    end
 
     assign {ertn_flush, csr_waddr, csr_wmask, wb_csr_we,
             csr_wvalue} = ws_to_csr_bus;

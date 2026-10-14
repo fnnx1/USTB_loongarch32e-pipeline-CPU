@@ -28,18 +28,7 @@ module csr(
     input wire  coreid_in    //核心ID
     );
 
-// ticlr
     reg        csr_ticlr_clr; //定时器清零
-
-    always @(posedge clk) begin
-        if (reset) 
-            csr_ticlr_clr <= 1'b0;
-        else if(wb_ex)
-            csr_ticlr_clr <= 1'b0;
-    end
-
-
-// crmd
     reg [1:0] csr_crmd_plv; //当前特权级
     reg       csr_crmd_ie; //当前中断使能
     wire       csr_crmd_da; //当前地址空间有效
@@ -48,8 +37,37 @@ module csr(
     wire [1:0] csr_crmd_datm; //当前指令地址空间类型
     reg [1:0] csr_prmd_pplv; //以前特权级
     reg       csr_prmd_pie; //以前中断使能
+    reg [12:0] csr_ecfg_lie; //本地中断使能
+    reg [12:0] csr_estat_is; //中断状态
+    reg [5:0] csr_estat_ecode; //异常码
+    reg [8:0] csr_estat_esubcode; //异常子码
+    reg  [31:0] timer_cnt;
+    reg [31:0] csr_era_pc;
+    reg [31:0] csr_badv_vaddr; //坏地址寄存器
+    reg [25:0] csr_eentry_va; //异常入口地址
+    reg [31:0] csr_save0_data;
+    reg [31:0] csr_save1_data;
+    reg [31:0] csr_save2_data;
+    reg [31:0] csr_save3_data;
+    reg [31:0] csr_tid; //定时器编号
+    reg        csr_tcfg_en; //定时器使能
+    reg        csr_tcfg_period; //定时器周期
+    reg [29:0]  csr_tcfg_initval; //定时器初始值(暂定)
+    reg [31:0] csr_tval_timeval; //定时器当前值
+    wire [31:0] tcfg_next_value;
+    wire [31:0] csr_tval;
+    reg [31:0] csr_rdata;
+
+// ticlr
+    always @(posedge clk) begin
+        if (reset)
+            csr_ticlr_clr <= 1'b0;
+        else if(wb_ex)
+            csr_ticlr_clr <= 1'b0;
+    end
 
 
+// crmd
     always @(posedge clk) begin
         if (reset)
             csr_crmd_plv <= 2'b0;
@@ -96,8 +114,6 @@ module csr(
 
 
 // ecfg
-    reg [12:0] csr_ecfg_lie; //本地中断使能
-
     always @(posedge clk) begin
         if (reset)
             csr_ecfg_lie <= 13'b0;
@@ -107,11 +123,6 @@ module csr(
     end
 
 // estat
-    reg [12:0] csr_estat_is; //中断状态
-    reg [5:0] csr_estat_ecode; //异常码
-    reg [8:0] csr_estat_esubcode; //异常子码
-     reg  [31:0] timer_cnt;
-
     always @(posedge clk) begin
         if (reset)
             csr_estat_is[1:0] <= 2'b0;
@@ -137,20 +148,15 @@ module csr(
 
 
 // era
-    reg [31:0] csr_era_pc;
-
     always @(posedge clk) begin
-        if (wb_ex)
+        if (wb_ex || int_flush)
             csr_era_pc <= wb_pc;
-        else if (int_flush)
         else if (csr_we && csr_waddr==`CSR_ERA)
             csr_era_pc <= csr_wmask[`CSR_ERA_PC]&csr_wvalue[`CSR_ERA_PC]
                         | ~csr_wmask[`CSR_ERA_PC]&csr_era_pc;
     end
 
 // badv
-    reg [31:0] csr_badv_vaddr; //坏地址寄存器
-
     assign wb_ex_addr_err = wb_ecode==`ECODE_ADE || wb_ecode==`ECODE_ALE;
 
     always @(posedge clk) begin
@@ -159,19 +165,12 @@ module csr(
                             wb_esubcode==`ESUBCODE_ADEF) ? wb_pc : wb_vaddr;
     end
 // eentry
-    reg [25:0] csr_eentry_va; //异常入口地址
-
     always @(posedge clk) begin
         if (csr_we && csr_waddr==`CSR_EENTRY)
             csr_eentry_va <= csr_wmask[`CSR_EENTRY_VA]&csr_wvalue[`CSR_EENTRY_VA]
                         | ~csr_wmask[`CSR_EENTRY_VA]&csr_eentry_va;
     end
 // save0~3
-    reg [31:0] csr_save0_data;
-    reg [31:0] csr_save1_data;
-    reg [31:0] csr_save2_data;
-    reg [31:0] csr_save3_data;
-
     always @(posedge clk) begin
         if (csr_we && csr_waddr==`CSR_SAVE0)
             csr_save0_data <= csr_wmask[`CSR_SAVE_DATA]&csr_wvalue[`CSR_SAVE_DATA]
@@ -188,8 +187,6 @@ module csr(
     end
 
 // tid
-    reg [31:0] csr_tid; //定时器编号
-
     always @(posedge clk) begin
         if (reset)
             csr_tid <= coreid_in;
@@ -198,10 +195,6 @@ module csr(
                         | ~csr_wmask[`CSR_TID_TID]&csr_tid;
     end
 // tcfg
-    reg        csr_tcfg_en; //定时器使能
-    reg        csr_tcfg_period; //定时器周期
-    reg [29:0]  csr_tcfg_initval; //定时器初始值(暂定)
-
     always @(posedge clk) begin
         if (reset)
             csr_tcfg_en <= 1'b0;
@@ -216,11 +209,6 @@ module csr(
         end
     end
 // tval
-    reg [31:0] csr_tval_timeval; //定时器当前值
-    wire [31:0] tcfg_next_value;
-    wire [31:0] csr_tval;
-
-
     assign tcfg_next_value =  csr_wmask[31:0]&csr_wvalue[31:0]
                         | ~csr_wmask[31:0]&{csr_tcfg_initval,
                                             csr_tcfg_period, csr_tcfg_en};
@@ -239,8 +227,6 @@ module csr(
     end
 
     assign csr_tval = timer_cnt[31:0];
-
-    reg [31:0] csr_rdata;
 
     always @(*) begin
         csr_rdata = 32'b0;
