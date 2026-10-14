@@ -58,7 +58,7 @@ module MEM_stage(
     assign ms_allowin      = !mem_valid || ms_ready_go && ws_allowin || has_ex;
     assign ms_to_ws_valid  = mem_valid && ms_ready_go;
     always @(posedge clk) begin
-        if (reset || has_ex || ertn_flush) begin
+        if (reset || has_ex || ertn_flush || int_flush) begin
             mem_valid <= 1'b0;
             es_to_ms_bus_r <= 0;
         end else begin

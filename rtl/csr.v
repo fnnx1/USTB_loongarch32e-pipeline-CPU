@@ -62,7 +62,7 @@ module csr(
     always @(posedge clk) begin
         if (reset)
             csr_ticlr_clr <= 1'b0;
-        else if(wb_ex)
+        else if(wb_ex || int_flush)
             csr_ticlr_clr <= 1'b0;
     end
 
@@ -71,7 +71,7 @@ module csr(
     always @(posedge clk) begin
         if (reset)
             csr_crmd_plv <= 2'b0;
-        else if (wb_ex)
+        else if (wb_ex || int_flush)
             csr_crmd_plv <= 2'b0;
         else if (ertn_flush)
             csr_crmd_plv <= csr_prmd_pplv;
@@ -83,7 +83,7 @@ module csr(
     always @(posedge clk) begin
         if (reset)
             csr_crmd_ie <= 1'b0;
-        else if (wb_ex)
+        else if (wb_ex || int_flush)
             csr_crmd_ie <= 1'b0;
         else if (ertn_flush)
             csr_crmd_ie <= csr_prmd_pie;
@@ -100,7 +100,7 @@ module csr(
 
 // prmd
     always @(posedge clk) begin
-        if (wb_ex) begin
+        if (wb_ex || int_flush) begin
             csr_prmd_pplv <= csr_crmd_plv;
             csr_prmd_pie  <= csr_crmd_ie;
         end
@@ -143,6 +143,12 @@ module csr(
         if (wb_ex) begin
             csr_estat_ecode    <= wb_ecode;
             csr_estat_esubcode <= wb_esubcode;
+        end else if (int_flush && csr_crmd_ie == 1'b1) begin
+            if((csr_estat_is[11] && csr_ecfg_lie[11] && csr_crmd_ie))
+                begin
+                    csr_estat_ecode    <= `ECODE_INT;
+                    csr_estat_esubcode <= `ESUBCODE_INT;
+                end
         end
     end
 
@@ -160,7 +166,7 @@ module csr(
     assign wb_ex_addr_err = wb_ecode==`ECODE_ADE || wb_ecode==`ECODE_ALE;
 
     always @(posedge clk) begin
-        if (wb_ex && wb_ex_addr_err)
+        if ((wb_ex || int_flush) && wb_ex_addr_err)
             csr_badv_vaddr <= (wb_ecode==`ECODE_ADE &&
                             wb_esubcode==`ESUBCODE_ADEF) ? wb_pc : wb_vaddr;
     end

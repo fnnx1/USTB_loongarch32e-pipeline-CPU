@@ -100,7 +100,7 @@ module EX_stage(
     assign es_allowin      = !es_valid || es_ready_go && ms_allowin;
     assign es_to_ms_valid  = es_valid && es_ready_go;
     always @(posedge clk) begin
-        if (reset || has_ex || ertn_flush) begin
+        if (reset || has_ex || ertn_flush || int_flush) begin
             es_valid <= 1'b0;
             ds_to_es_bus_r <= 0;
         end else begin

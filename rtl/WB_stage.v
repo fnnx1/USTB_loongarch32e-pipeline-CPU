@@ -80,7 +80,7 @@ module WB_stage(
     assign debug_wb_rf_wnum  = ws_valid ? ms_to_ws_bus_r[69:65] : 5'b0;
     assign debug_wb_rf_wdata = ws_valid ? ws_to_rf_bus[31:0] : 32'b0;
     always @(posedge clk) begin
-        if (reset || has_ex || ertn_flush) begin
+        if (reset || has_ex || ertn_flush || int_flush) begin
             ws_valid <= 1'b0;
             ms_to_ws_bus_r <= 0;
         end else begin

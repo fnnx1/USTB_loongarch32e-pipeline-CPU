@@ -23,24 +23,25 @@
     `define W 2'b11
 
     //异常类型
-    `define ECODE_INT 6'h00
-    `define ECODE_PIL 6'h01
-    `define ECODE_PIS 6'h02
-    `define ECODE_PIF 6'h03
-    `define ECODE_PME 6'h04
+    `define ECODE_INT 6'h00   // 中断
+    `define ECODE_PIL 6'h01   // 读操作页无效
+    `define ECODE_PIS 6'h02   // 写操作页无效
+    `define ECODE_PIF 6'h03   // 取指页无效
+    `define ECODE_PME 6'h04   // 页修改异常
 
 
-    `define ECODE_PPI 6'h07
-    `define ECODE_ADE 6'h08
-    `define ECODE_ALE 6'h09
-    `define ECODE_BCE 6'h0A
-    `define ECODE_SYS 6'h0B
-    `define ECODE_BRK 6'h0C
-    `define ECODE_INE 6'h0D
-    `define ECODE_IPE 6'h0E
-    `define ECODE_FPE 6'h0F
-    `define ECODE_TLBR 6'h3F
+    `define ECODE_PPI 6'h07   // 页特权等级不合规
+    `define ECODE_ADE 6'h08   // 地址错误（子码区分取指与访存）
+    `define ECODE_ALE 6'h09   // 访存地址错误
+    `define ECODE_BCE 6'h0A   // 边界检查异常
+    `define ECODE_SYS 6'h0B   // 系统调用异常
+    `define ECODE_BRK 6'h0C   // 断点异常
+    `define ECODE_INE 6'h0D   // 指令不存在
+    `define ECODE_IPE 6'h0E   // 指令特权等级不合规
+    `define ECODE_FPE 6'h0F   // 浮点运算异常
+    `define ECODE_TLBR 6'h3F  // TLB 重填异常
 
+    `define ESUBCODE_INT 9'h000
     `define ESUBCODE_BRK 9'h000
     `define ESUBCODE_SYS 9'h000
     `define ESUBCODE_ADEF 9'h000
