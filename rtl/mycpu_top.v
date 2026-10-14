@@ -91,7 +91,7 @@ module mycpu_top(
             csr_wvalue} = ws_to_csr_bus;
     assign csr_we = wb_csr_we;
     assign {wb_ex, wb_ecode, wb_esubcode} = ws_to_rf_bus[54:39];
-    assign wb_pc = debug_wb_pc;
+    assign wb_pc = ws_to_csr_bus[109:78];
 
     assign hw_int_in = 8'b0;//测例这么要求的，本质寄存器也是只读状态
     //暂定

@@ -15,7 +15,7 @@
     //WS->RF 1+6+9+1+1+5+32=55
     `define WS_TO_RF_BUS_WD 55
     //WS->CSR 1(csr_ertn)+12+32+1+32=78
-    `define WS_TO_CSR_BUS_WD 78
+    `define WS_TO_CSR_BUS_WD 110
 
     //访存字节数
     `define B 2'b01
