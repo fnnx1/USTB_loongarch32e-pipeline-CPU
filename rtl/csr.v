@@ -260,5 +260,5 @@ module csr(
     assign ex_entry = {csr_eentry_va, 6'b0};
     assign csr_rvalue = csr_re ? csr_rdata : 32'b0;
     assign has_int = ((csr_estat_is[12:0] & csr_ecfg_lie[12:0]) != 13'b0) && (csr_crmd_ie == 1'b1);
-    assign has_ex = (wb_ecode == `ECODE_SYS) || (wb_ecode == `ECODE_BRK) || (wb_ecode == `ECODE_INE);
+    assign has_ex = (wb_ecode == `ECODE_SYS) || (wb_ecode == `ECODE_BRK) || (wb_ecode == `ECODE_INE) || (wb_ecode == `ECODE_ADE);
 endmodule
