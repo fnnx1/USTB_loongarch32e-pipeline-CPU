@@ -42,6 +42,7 @@
     `define ECODE_TLBR 6'h3F  // TLB 重填异常
 
     `define ESUBCODE_INT 9'h000
+    `define ESUBCODE_INE 9'h000
     `define ESUBCODE_BRK 9'h000
     `define ESUBCODE_SYS 9'h000
     `define ESUBCODE_ADEF 9'h000

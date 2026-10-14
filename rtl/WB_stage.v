@@ -50,7 +50,7 @@ module WB_stage(
                         ws_excode,      //[53:48]
                         ws_esubcode,    //[47:39]
                         ws_valid && ms_to_ws_bus_r[71],  //[38]    load标志
-                        ws_valid && ms_to_ws_bus_r[70],  //[37]    写寄存器使能
+                        !ws_ex && ws_valid && ms_to_ws_bus_r[70],  //[37]    写寄存器使能
                         ms_to_ws_bus_r[69:65],           //[36:32] 写寄存器地址
                         ms_to_ws_bus_r[63:32]//[31: 0] 写回数据
                         };
@@ -76,7 +76,7 @@ module WB_stage(
     assign ws_to_rf_valid = ws_valid;
     // debug info generate
     assign debug_wb_pc       = ws_valid ? ms_to_ws_bus_r[31:0] : 32'b0;
-    assign debug_wb_rf_we    = {4{ws_valid && ms_to_ws_bus_r[70]}};
+    assign debug_wb_rf_we    = {4{!ws_ex && ws_valid && ms_to_ws_bus_r[70]}};
     assign debug_wb_rf_wnum  = ws_valid ? ms_to_ws_bus_r[69:65] : 5'b0;
     assign debug_wb_rf_wdata = ws_valid ? ws_to_rf_bus[31:0] : 32'b0;
     always @(posedge clk) begin

@@ -143,12 +143,9 @@ module csr(
         if (wb_ex) begin
             csr_estat_ecode    <= wb_ecode;
             csr_estat_esubcode <= wb_esubcode;
-        end else if (int_flush && csr_crmd_ie == 1'b1) begin
-            if((csr_estat_is[11] && csr_ecfg_lie[11] && csr_crmd_ie))
-                begin
-                    csr_estat_ecode    <= `ECODE_INT;
-                    csr_estat_esubcode <= `ESUBCODE_INT;
-                end
+        end else if (int_flush) begin
+                csr_estat_ecode    <= `ECODE_INT;
+                csr_estat_esubcode <= `ESUBCODE_INT;
         end
     end
 
@@ -263,5 +260,5 @@ module csr(
     assign ex_entry = {csr_eentry_va, 6'b0};
     assign csr_rvalue = csr_re ? csr_rdata : 32'b0;
     assign has_int = ((csr_estat_is[12:0] & csr_ecfg_lie[12:0]) != 13'b0) && (csr_crmd_ie == 1'b1);
-    assign has_ex = (wb_ecode == `ECODE_SYS) || (wb_ecode == `ECODE_BRK);
+    assign has_ex = (wb_ecode == `ECODE_SYS) || (wb_ecode == `ECODE_BRK) || (wb_ecode == `ECODE_INE);
 endmodule

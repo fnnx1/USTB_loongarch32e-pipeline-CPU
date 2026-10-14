@@ -160,6 +160,8 @@ wire        inst_syscall;
 wire        inst_ertn;
 wire        inst_break;
 
+wire        unsupport_inst;//但你怎么知道指令是不存在还是你没实现呢（？
+
 wire        need_ui5;
 wire        need_si12;
 wire        need_si16;
@@ -200,14 +202,16 @@ wire ms_csr_hazard;
 wire ws_csr_hazard;
 
 //如果上一级是异常指令
-assign ds_ex = if_ex | inst_syscall | inst_break;
+assign ds_ex = if_ex | inst_syscall | inst_break | unsupport_inst;
 assign ds_excode = if_ex ? if_ecode :
                     inst_syscall ? `ECODE_SYS :
                     inst_break ? `ECODE_BRK :
+                    unsupport_inst ? `ECODE_INE :
                     6'b0;
 assign ds_esubcode = if_ex ? if_esubcode : 
                     inst_syscall ? `ESUBCODE_SYS:
                     inst_break ? `ESUBCODE_BRK:
+                    unsupport_inst ? `ESUBCODE_INE:
                     9'b0;
 
 assign op_31_26  = ds_inst[31:26];
@@ -290,6 +294,16 @@ assign inst_csrrd = op_31_26_d[6'h01] & op_25_24_d[2'h0] & ds_inst[9:5] == 5'h0;
 assign inst_syscall = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & op_19_15_d[5'h16];
 assign inst_ertn = op_31_26_d[6'h01] & op_25_22_d[4'h9] & op_21_20_d[2'h0] & op_19_15_d[5'h10] & op_14_10_d[5'he] & op_9_5_d[5'h0] & op_4_0_d[5'h0];
 assign inst_break = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & op_19_15_d[5'h14];
+
+assign unsupport_inst = ds_valid &&fs_to_ds_valid && !(inst_add_w | inst_addi_w | inst_ld_w | inst_ld_b | inst_st_w | inst_st_b | inst_st_h
+                        | inst_jirl | inst_bl | inst_b | inst_beq | inst_bne | inst_blt | inst_bge | inst_bltu | inst_bgeu
+                        | inst_pcaddu12i | inst_ld_h | inst_ld_bu | inst_ld_hu
+                        | inst_sub_w | inst_slt | inst_slti | inst_sltu | inst_sltui
+                        | inst_and | inst_andi | inst_nor | inst_or | inst_ori | inst_xor | inst_xori
+                        | inst_slli_w | inst_sll_w | inst_srli_w | inst_srl_w | inst_srai_w | inst_sra_w
+                        | inst_lu12i_w | inst_div_w | inst_div_wu | inst_mul_w | inst_mulh_w | inst_mulh_wu
+                        | inst_mod_w | inst_mod_wu
+                        | inst_csrxchg | inst_csrwr | inst_csrrd | inst_syscall | inst_ertn | inst_break);
 
 assign alu_op[ 0] = inst_add_w | inst_addi_w | inst_ld_w | inst_ld_b | inst_st_w | inst_st_b | inst_st_h
                     | inst_jirl | inst_bl | inst_pcaddu12i | inst_ld_h | inst_ld_bu | inst_ld_hu;
