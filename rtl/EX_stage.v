@@ -38,6 +38,8 @@ module EX_stage(
     wire [5:0] ds_excode; //ds阶段的异常码
     wire [8:0] ds_esubcode; //ds阶段的异常子码
 
+    wire is_ALE; // 非对齐访存
+
     wire [11:0] csr_write_num;
     wire [31:0] csr_wmask;
     wire csr_ertn;
@@ -96,9 +98,11 @@ module EX_stage(
     wire exception_st_conflict;
     wire [31:0] div_mod_result;
 
-    assign es_ex = ds_ex;
-    assign es_excode = ds_excode;
-    assign es_esubcode = ds_esubcode;
+    assign es_ex = ds_ex || is_ALE;
+    assign es_excode = ds_ex ? ds_excode :
+                       is_ALE ? `ECODE_ALE : 6'b0;
+    assign es_esubcode = ds_ex ? ds_esubcode :
+                        is_ALE ? `ESUBCODE_ALE : 9'b0;
     assign es_allowin      = !es_valid || es_ready_go && ms_allowin;
     assign es_to_ms_valid  = es_valid && es_ready_go;
     always @(posedge clk) begin
@@ -207,6 +211,9 @@ module EX_stage(
                                          4'b1000) :
                         mem_size == `H ? (alu_result[1] == 1'b0 ? 4'b0011 : 4'b1100):
                         4'b1111;
+
+    assign is_ALE = (mem_size == `H && alu_result[0] != 1'b0) || (mem_size == `W && alu_result[1:0] != 2'b00);
+
     assign data_sram_addr  = alu_result;
     assign data_sram_wdata = sram_wdata;
     assign data_sram_we    = (!exception_st_conflict && es_valid & mem_we) ? sram_we : 4'b0;

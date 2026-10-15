@@ -41,6 +41,7 @@
     `define ECODE_FPE 6'h0F   // 浮点运算异常
     `define ECODE_TLBR 6'h3F  // TLB 重填异常
 
+    `define ESUBCODE_ALE 9'h000
     `define ESUBCODE_INT 9'h000
     `define ESUBCODE_INE 9'h000
     `define ESUBCODE_IPE 9'h000
