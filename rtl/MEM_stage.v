@@ -27,6 +27,7 @@ module MEM_stage(
     wire es_ex;
     wire [5:0] es_excode;
     wire [8:0] es_esubcode;
+    wire [31:0] ex_badv;
 
     wire [11:0] csr_write_num;
     wire [31:0] csr_wmask;
@@ -69,6 +70,7 @@ module MEM_stage(
         end
     end
     assign {
+            ex_badv,
             csr_ertn,
             csr_write_num,
             csr_wmask,
@@ -113,9 +115,10 @@ module MEM_stage(
                         data_sram_rdata;
 
 
-    // ms_to_ws_bus 总位宽 = 166 bit
+    // ms_to_ws_bus 总位宽 = 198 bit，最高32位为访存错误地址
     assign final_result = (res_from_mem | load_op) ? sram_rdata : alu_result;
     assign ms_to_ws_bus = {
+                            ex_badv,       //[197:166] 访存错误地址
                             csr_ertn,      //[165]      1 bit
                             csr_write_num ,  //[164:153] 12 bit  CSR写地址
                             csr_wmask    ,  //[152:121] 32 bit  CSR写掩码

@@ -39,6 +39,7 @@ module EX_stage(
     wire [8:0] ds_esubcode; //ds阶段的异常子码
 
     wire is_ALE; // 非对齐访存
+    wire [31:0] ex_badv; // ex阶段的坏地址
 
     wire [11:0] csr_write_num;
     wire [31:0] csr_wmask;
@@ -213,6 +214,7 @@ module EX_stage(
                         4'b1111;
 
     assign is_ALE = (mem_size == `H && alu_result[0] != 1'b0) || (mem_size == `W && alu_result[1:0] != 2'b00);
+    assign ex_badv = alu_result;
 
     assign data_sram_addr  = alu_result;
     assign data_sram_wdata = sram_wdata;
@@ -227,8 +229,9 @@ module EX_stage(
     //csrxchange交换逻辑
     assign final_result = csr_we ? _csr_rdata : div_mod_result;
     assign csr_wdata = csr_we ? (es_excode == `ECODE_SYS ? ds_pc + 4 : rkd_value) : 32'h0;
-    // es_to_ms_bus 总位宽 = 202 bit
+    // es_to_ms_bus 总位宽 = 234 bit，最高32位为访存错误地址
     assign es_to_ms_bus = {
+                        ex_badv,        
                         csr_ertn,      //[201]      1 bit
                         csr_write_num ,  //[200:189] 12 bit  CSR写地址
                         csr_wmask    ,  //[188:157] 32 bit  CSR写掩码

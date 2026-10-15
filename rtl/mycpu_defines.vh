@@ -8,14 +8,14 @@
     `define FS_TO_DS_BUS_WD 80
     //DS->ES 1(csr_ertn)+12+32+1+32+1+6+9+1+1+1+1+1+2+15+1+1+1+1+1+1+5+32+32+32+32+1=256
     `define DS_TO_ES_BUS_WD 256
-    //ES->MS 1(csr_ertn)+12+32+1+32+1+6+9+1+2+1+5+1+1+1+32+32+32=202
-    `define ES_TO_MS_BUS_WD 202
-    //MS->WS 1(csr_ertn)+12+32+1+32+1+6+9+1+1+5+1+32+32=166
-    `define MS_TO_WS_BUS_WD 166
+    //ES->MS 原字段202位 + ex_badv 32位 = 234
+    `define ES_TO_MS_BUS_WD 234
+    //MS->WS 原字段166位 + ex_badv 32位 = 198
+    `define MS_TO_WS_BUS_WD 198
     //WS->RF 1+6+9+1+1+5+32=55
     `define WS_TO_RF_BUS_WD 55
-    //WS->CSR 1(csr_ertn)+12+32+1+32=78
-    `define WS_TO_CSR_BUS_WD 110
+    //WS->CSR 1(csr_ertn)+12+32+1+32 + 32=142
+    `define WS_TO_CSR_BUS_WD 142
 
     //访存字节数
     `define B 2'b01

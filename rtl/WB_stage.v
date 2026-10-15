@@ -40,6 +40,7 @@ module WB_stage(
     wire [31:0] wb_pc;
 
     assign wb_pc = ms_to_ws_bus_r[31:0];
+    assign wb_vaddr = ms_to_ws_bus_r[`MS_TO_WS_BUS_WD-1:`MS_TO_WS_BUS_WD-32];
     assign ws_ready_go     = 1'b1;
     //最后一级, 没有下游 allowin
     assign ws_allowin      = !ws_valid || ws_ready_go;
@@ -56,6 +57,7 @@ module WB_stage(
                         };
     // ws_to_csr_bus 总位宽 = 1(csr_ertn)+12+32+1+32 + 32 = 110 bit
     assign ws_to_csr_bus = {
+                            wb_vaddr,       //[141:110] 异常对应的访存地址
                             wb_pc,//[109:78] 写回的PC，当异常发生时用于记录异常发生的地址，因为debug_pc会失效，所以要单独记录
                             ws_valid && csr_ertn, //[77]     ertn指令标志
                             csr_write_num,  //[76:65]

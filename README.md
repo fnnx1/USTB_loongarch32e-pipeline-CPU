@@ -109,3 +109,4 @@ WARNING: Too many words specified in data file ../../../../../../../../func/obj/
 9. 完成指令不存在异常INE
 10. 完成取指错误异常ADE，进一步完善，再进一步完善ertn跳转到异常地址，以及ertn-st问题的处理（因为原判断只判断是否是异常然后等待，但现在也要判断是否是ertn指令）
 11. 完成访存非对齐异常ALE
+12. 暂时提交
