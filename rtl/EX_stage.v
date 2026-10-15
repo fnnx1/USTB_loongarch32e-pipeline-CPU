@@ -24,9 +24,11 @@ module EX_stage(
 
     //处理异常和访存的冲突
     input wire         ms_to_ws_valid,
-    input wire         ms_ex,       //ex阶段的异常信号
+    input wire         ms_ex,       //ms阶段的异常信号
+    input wire         ms_ertn,     //ms阶段的ertn信号
     input wire         ws_to_rf_valid,
-    input wire         wb_ex
+    input wire         wb_ex,
+    input wire         wb_ertn
 );
 
     wire es_ex; //ex阶段的异常信号
@@ -192,7 +194,7 @@ module EX_stage(
          .m_axis_dout_tvalid      (div_result_unsigned_valid)  // output
     );
     // 当内存访问阶段或写回阶段发生异常且store使能时，发生冲突
-    assign exception_st_conflict = (ms_to_ws_valid && ms_ex && data_sram_en) || (ws_to_rf_valid && wb_ex && data_sram_en);
+    assign exception_st_conflict = (ms_to_ws_valid && (ms_ex || ms_ertn) && data_sram_en) || (ws_to_rf_valid && (wb_ex || wb_ertn) && data_sram_en);
 
     assign data_sram_en    = (mem_we | res_from_mem | load_op);
 
@@ -211,7 +213,7 @@ module EX_stage(
 
     assign mem_addr_offset = alu_result[1:0];   //内存地址的偏移量
 
-    assign es_ready_go = int_flush || has_ex ||
+    assign es_ready_go = ertn_flush || int_flush || has_ex ||
                         !exception_st_conflict && ((!div_signed && !div_unsigned) || (div_signed && div_result_signed_valid) || (div_unsigned && div_result_unsigned_valid));
     assign div_mod_result = div_signed ? (inst_div_w ? div_result_signed[63:32] : (inst_mod_w ? div_result_signed[31:0] : alu_result)) 
                         : (div_unsigned ? (inst_div_wu ? div_result_unsigned[63:32] : (inst_mod_wu ? div_result_unsigned[31:0] : alu_result)) : alu_result);

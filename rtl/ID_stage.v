@@ -161,7 +161,7 @@ wire        inst_ertn;
 wire        inst_break;
 
 wire        unsupport_inst;//但你怎么知道指令是不存在还是你没实现呢（？
-wire        is_ADEF;//在译码阶段判断地址错误异常
+wire        is_IPE;//权限错误
 
 wire        need_ui5;
 wire        need_si12;
@@ -203,16 +203,18 @@ wire ms_csr_hazard;
 wire ws_csr_hazard;
 
 //如果上一级是异常指令
-assign ds_ex = if_ex | inst_syscall | inst_break | unsupport_inst;
+assign ds_ex = if_ex | inst_syscall | inst_break | unsupport_inst | is_IPE;
 assign ds_excode = if_ex ? if_ecode :
                     inst_syscall ? `ECODE_SYS :
                     inst_break ? `ECODE_BRK :
                     unsupport_inst ? `ECODE_INE :
+                    is_IPE ? `ECODE_IPE :
                     6'b0;
 assign ds_esubcode = if_ex ? if_esubcode : 
                     inst_syscall ? `ESUBCODE_SYS:
                     inst_break ? `ESUBCODE_BRK:
                     unsupport_inst ? `ESUBCODE_INE:
+                    is_IPE ? `ESUBCODE_IPE:
                     9'b0;
 
 assign op_31_26  = ds_inst[31:26];
@@ -388,14 +390,16 @@ assign mem_we        = inst_st_w | inst_st_b | inst_st_h;
 assign dest          = dst_is_r1 ? 5'd1 : rd;
 
 
-assign csr_re = inst_csrxchg | inst_csrwr | inst_csrrd | inst_syscall;
+assign csr_re = inst_csrxchg | inst_csrwr | inst_csrrd | inst_syscall | inst_ertn;
 assign csr_we = inst_csrxchg | inst_csrwr | inst_csrrd; 
 //这里给csrrd写使能是因为，csr_we在ES级用于交换csr和rd的值，读指令也需要写回rd，只是不写csr，因此下文mask置全0即可
-assign csr_raddr = ds_inst[21:10];
+assign csr_raddr = inst_ertn ? 12'd0 :ds_inst[21:10];
 assign csr_write_num = csr_we ? csr_raddr : 12'd0;
 assign csr_wmask = inst_csrxchg ? rj_value :
                    inst_csrwr ? 32'hFFFFFFFF : 32'h0;
 assign csr_ertn = inst_ertn;
+
+assign is_IPE = (csr_rdata[`CSR_CRMD_PLV]!=2'b0) && inst_ertn;
 
 assign rf_raddr1 = rj;
 assign rf_raddr2 = src_reg_is_rd ? rd :rk;
@@ -483,7 +487,7 @@ assign es_csr_hazard = es_to_ms_valid && es_csr_conflict_bus[12] && (es_csr_conf
 assign ms_csr_hazard = ms_to_ws_valid && ms_csr_conflict_bus[12] && (ms_csr_conflict_bus[11:0] == csr_write_num);
 assign ws_csr_hazard = ws_to_rf_valid && ws_csr_conflict_bus[12] && (ws_csr_conflict_bus[11:0] == csr_write_num);
 //ex8_obj中有个测试会在syscall后几条指令触发一个load_use，导致会置ds_ready_go为0，使得取指也暂停，
-assign ds_ready_go = reset || (!load_data_hazard && !es_csr_hazard && !ms_csr_hazard && !ws_csr_hazard) || int_flush || has_ex;
+assign ds_ready_go = reset || (!load_data_hazard && !es_csr_hazard && !ms_csr_hazard && !ws_csr_hazard) || int_flush || has_ex || ertn_flush;
 
 // 是否是写指令，且是否寄存器值相等
 assign ds_allowin      = !ds_valid || ds_ready_go && es_allowin;

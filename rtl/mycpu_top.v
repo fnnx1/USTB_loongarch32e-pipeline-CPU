@@ -197,11 +197,15 @@ module mycpu_top(
         .int_flush(int_flush),
         .ertn_flush(ertn_flush),
         .ms_ex(ms_ex),
+        .ms_ertn(ms_ertn),
         .ms_to_ws_valid(ms_to_ws_valid),
         .wb_ex(wb_ex),
+        .wb_ertn(wb_ertn),
         .ws_to_rf_valid(ws_valid),
         .has_ex(has_ex)
     );
+    assign ms_ertn = ms_to_ws_bus[165];
+    assign wb_ertn = ws_to_csr_bus[77];
 
     MEM_stage mem_stage(
         .clk(clk),
