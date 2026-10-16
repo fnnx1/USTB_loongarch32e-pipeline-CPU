@@ -38,6 +38,7 @@ module WB_stage(
     reg [`MS_TO_WS_BUS_WD -1 :0] ms_to_ws_bus_r;
     wire ws_ready_go;
     wire [31:0] wb_pc;
+    wire [31:0] wb_vaddr;
 
     assign wb_pc = ms_to_ws_bus_r[31:0];
     assign wb_vaddr = ms_to_ws_bus_r[`MS_TO_WS_BUS_WD-1:`MS_TO_WS_BUS_WD-32];
