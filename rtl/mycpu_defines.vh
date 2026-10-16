@@ -6,8 +6,8 @@
 
     //各级总线位宽：FS->DS 1+6+9+32+32=80
     `define FS_TO_DS_BUS_WD 80
-    //DS->ES 1(csr_ertn)+12+32+1+32+1+6+9+1+1+1+1+1+2+15+1+1+1+1+1+1+5+32+32+32+32+1=256
-    `define DS_TO_ES_BUS_WD 256
+    //DS->ES 总位宽：移除32位counter_id后为323位
+    `define DS_TO_ES_BUS_WD 323
     //ES->MS 原字段202位 + ex_badv 32位 = 234
     `define ES_TO_MS_BUS_WD 234
     //MS->WS 原字段166位 + ex_badv 32位 = 198

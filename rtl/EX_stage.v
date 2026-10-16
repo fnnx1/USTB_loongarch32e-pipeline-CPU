@@ -30,6 +30,10 @@ module EX_stage(
     input wire         wb_ex,
     input wire         wb_ertn
 );
+    wire inst_rdcntvh_w;
+    wire inst_rdcntvl_w;
+    wire inst_rdcntid_w;
+    wire [63:0] Counter;
 
     wire es_ex; //ex阶段的异常信号
     wire [5:0] es_excode; //ex阶段的异常码
@@ -119,6 +123,10 @@ module EX_stage(
     end
 
     assign {
+            inst_rdcntvh_w,
+            inst_rdcntvl_w,
+            Counter,
+            inst_rdcntid_w,
             csr_ertn,
             csr_write_num,
             csr_wmask,
@@ -226,8 +234,13 @@ module EX_stage(
                         !exception_st_conflict && ((!div_signed && !div_unsigned) || (div_signed && div_result_signed_valid) || (div_unsigned && div_result_unsigned_valid));
     assign div_mod_result = div_signed ? (inst_div_w ? div_result_signed[63:32] : (inst_mod_w ? div_result_signed[31:0] : alu_result)) 
                         : (div_unsigned ? (inst_div_wu ? div_result_unsigned[63:32] : (inst_mod_wu ? div_result_unsigned[31:0] : alu_result)) : alu_result);
+
+    assign final_result =   csr_we ? _csr_rdata :
+                            inst_rdcntid_w ? _csr_rdata :
+                            inst_rdcntvh_w ? Counter[63:32] :
+                            inst_rdcntvl_w ? Counter[31:0] :
+                            div_mod_result;
     //csrxchange交换逻辑
-    assign final_result = csr_we ? _csr_rdata : div_mod_result;
     assign csr_wdata = csr_we ? (es_excode == `ECODE_SYS ? ds_pc + 4 : rkd_value) : 32'h0;
     // es_to_ms_bus 总位宽 = 234 bit，最高32位为访存错误地址
     assign es_to_ms_bus = {

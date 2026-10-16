@@ -37,6 +37,10 @@ module ID_stage(
     input wire [12:0] ms_csr_conflict_bus,
     input wire [12:0] ws_csr_conflict_bus
 );
+
+// 计数器，用于统计时钟周期数
+reg [63:0] Counter;
+
 // 异常处理
 wire        if_ex;
 wire [5:0] if_ecode;
@@ -63,6 +67,7 @@ wire src1_is_pc; //来自src为pc地址
 wire src2_is_imm; //src2为imm
 wire res_from_mem; //结果来自mem
 wire dst_is_r1;
+wire dst_is_rj;
 wire gr_we;
 wire mem_we;
 wire src_reg_is_rd;
@@ -159,6 +164,9 @@ wire        inst_csrxchg;
 wire        inst_syscall;
 wire        inst_ertn;
 wire        inst_break;
+wire        inst_rdcntvl_w;
+wire        inst_rdcntvh_w;
+wire        inst_rdcntid_w;
 
 wire        unsupport_inst;//但你怎么知道指令是不存在还是你没实现呢（？
 wire        is_IPE;//权限错误
@@ -201,6 +209,17 @@ wire load_data_hazard = es_load_hazard || ms_load_hazard;
 wire es_csr_hazard;
 wire ms_csr_hazard;
 wire ws_csr_hazard;
+
+
+always @(posedge clk) begin
+    if (reset) begin
+        Counter <= 64'b0;
+    end else if (Counter != 64'hFFFFFFFFFFFFFFFF)begin
+        Counter <= Counter + 1'b1;
+    end else begin
+        Counter <= 64'h0;
+    end
+end
 
 //如果上一级是异常指令
 assign ds_ex = if_ex | inst_syscall | inst_break | unsupport_inst | is_IPE;
@@ -297,6 +316,9 @@ assign inst_csrrd = op_31_26_d[6'h01] & op_25_24_d[2'h0] & ds_inst[9:5] == 5'h0;
 assign inst_syscall = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & op_19_15_d[5'h16];
 assign inst_ertn = op_31_26_d[6'h01] & op_25_22_d[4'h9] & op_21_20_d[2'h0] & op_19_15_d[5'h10] & op_14_10_d[5'he] & op_9_5_d[5'h0] & op_4_0_d[5'h0];
 assign inst_break = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h2] & op_19_15_d[5'h14];
+assign inst_rdcntid_w = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h0] & op_19_15_d[5'h0] & op_14_10_d[5'h18] & op_4_0_d[5'h0];
+assign inst_rdcntvl_w = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h0] & op_19_15_d[5'h0] & op_14_10_d[5'h18] & op_9_5_d[5'h0];
+assign inst_rdcntvh_w = op_31_26_d[6'h00] & op_25_22_d[4'h0] & op_21_20_d[2'h0] & op_19_15_d[5'h0] & op_14_10_d[5'h19] & op_9_5_d[5'h0];
 
 assign unsupport_inst = ds_valid &&fs_to_ds_valid && !(inst_add_w | inst_addi_w | inst_ld_w | inst_ld_b | inst_st_w | inst_st_b | inst_st_h
                         | inst_jirl | inst_bl | inst_b | inst_beq | inst_bne | inst_blt | inst_bge | inst_bltu | inst_bgeu
@@ -306,7 +328,8 @@ assign unsupport_inst = ds_valid &&fs_to_ds_valid && !(inst_add_w | inst_addi_w 
                         | inst_slli_w | inst_sll_w | inst_srli_w | inst_srl_w | inst_srai_w | inst_sra_w
                         | inst_lu12i_w | inst_div_w | inst_div_wu | inst_mul_w | inst_mulh_w | inst_mulh_wu
                         | inst_mod_w | inst_mod_wu
-                        | inst_csrxchg | inst_csrwr | inst_csrrd | inst_syscall | inst_ertn | inst_break);
+                        | inst_csrxchg | inst_csrwr | inst_csrrd | inst_syscall | inst_ertn | inst_break
+                        | inst_rdcntvl_w | inst_rdcntvh_w | inst_rdcntid_w);
 
 assign alu_op[ 0] = inst_add_w | inst_addi_w | inst_ld_w | inst_ld_b | inst_st_w | inst_st_b | inst_st_h
                     | inst_jirl | inst_bl | inst_pcaddu12i | inst_ld_h | inst_ld_bu | inst_ld_hu;
@@ -385,16 +408,20 @@ assign mem_size = inst_ld_b ? `B :
                   inst_ld_bu ? `B :
                   0;
 assign dst_is_r1     = inst_bl;
+assign dst_is_rj     = inst_rdcntid_w;
 assign gr_we         = ~inst_st_w & ~inst_st_b & ~inst_st_h & ~inst_beq & ~inst_bne & ~inst_b & ~inst_blt & ~inst_bge & ~inst_bltu & ~inst_bgeu;
 assign mem_we        = inst_st_w | inst_st_b | inst_st_h;
-assign dest          = dst_is_r1 ? 5'd1 : rd;
+assign dest          = dst_is_r1 ? 5'd1 : 
+                    dst_is_rj ? rj :
+                    rd;
 
 
-assign csr_re = inst_csrxchg | inst_csrwr | inst_csrrd | inst_syscall | inst_ertn;
+assign csr_re = inst_csrxchg | inst_csrwr | inst_csrrd | inst_syscall | inst_ertn | inst_rdcntid_w;
 assign csr_we = inst_csrxchg | inst_csrwr | inst_csrrd; 
 //这里给csrrd写使能是因为，csr_we在ES级用于交换csr和rd的值，读指令也需要写回rd，只是不写csr，因此下文mask置全0即可
-assign csr_raddr = inst_ertn ? 12'd0 :ds_inst[21:10];
-assign csr_write_num = csr_we ? csr_raddr : 12'd0;
+assign csr_raddr = inst_ertn ? 12'd0 :
+                   inst_rdcntid_w ? `CSR_TID : ds_inst[21:10];
+assign csr_write_num = (csr_we || inst_rdcntid_w) ? csr_raddr : 12'd0;
 assign csr_wmask = inst_csrxchg ? rj_value :
                    inst_csrwr ? 32'hFFFFFFFF : 32'h0;
 assign csr_ertn = inst_ertn;
@@ -452,8 +479,12 @@ assign {
         ds_inst,
         ds_pc} = fs_to_ds_bus_r;
 
-// ds_to_es_bus 总位宽 = 256 bit
+// ds_to_es_bus 总位宽 = 323 bit
 assign ds_to_es_bus = {
+                        inst_rdcntvh_w, //[322]      1 bit
+                        inst_rdcntvl_w, //[321]      1 bit
+                        Counter,        //[320:257] 64 bit
+                        inst_rdcntid_w, //[256]      1 bit
                         csr_ertn,     //[255]      1 bit
                         csr_write_num, //[254:243] 12 bit
                         csr_wmask,      //[242:211] 32 bit

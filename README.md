@@ -110,3 +110,6 @@ WARNING: Too many words specified in data file ../../../../../../../../func/obj/
 10. 完成取指错误异常ADE，进一步完善，再进一步完善ertn跳转到异常地址，以及ertn-st问题的处理（因为原判断只判断是否是异常然后等待，但现在也要判断是否是ertn指令）
 11. 完成访存非对齐异常ALE
 12. 补充定义badv为32位 , 当ALE时，写入报异常
+13. 实现rdcntvh_w , rdcntvl_w , rdcntid_w
+- 注意，前两个指令访问的计时器不是中断计时器，而是另一个计时器，但rdcntid_w所读取的计时器是csr40：tid
+完 全 胜 利
