@@ -218,7 +218,7 @@ module EX_stage(
 
     assign data_sram_addr  = alu_result;
     assign data_sram_wdata = sram_wdata;
-    assign data_sram_we    = (!exception_st_conflict && es_valid & mem_we) ? sram_we : 4'b0;
+    assign data_sram_we    = (!is_ALE &&!exception_st_conflict && es_valid & mem_we) ? sram_we : 4'b0;
 
     assign mem_addr_offset = alu_result[1:0];   //内存地址的偏移量
 
