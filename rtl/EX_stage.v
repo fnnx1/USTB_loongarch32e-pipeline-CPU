@@ -28,7 +28,7 @@ module EX_stage(
     input wire         ms_ertn,     //ms阶段的ertn信号
     input wire         ws_to_rf_valid,
     input wire         wb_ex,
-    input wire         wb_ertn
+    input wire         wb_ertn 
 );
     wire inst_rdcntvh_w;
     wire inst_rdcntvl_w;
@@ -244,7 +244,7 @@ module EX_stage(
     assign csr_wdata = csr_we ? (es_excode == `ECODE_SYS ? ds_pc + 4 : rkd_value) : 32'h0;
     // es_to_ms_bus 总位宽 = 234 bit，最高32位为访存错误地址
     assign es_to_ms_bus = {
-                        ex_badv,        
+                        ex_badv,
                         csr_ertn,      //[201]      1 bit
                         csr_write_num ,  //[200:189] 12 bit  CSR写地址
                         csr_wmask    ,  //[188:157] 32 bit  CSR写掩码
@@ -254,10 +254,10 @@ module EX_stage(
                         es_excode,    //[122:117] 6  bit
                         es_esubcode,  //[116:108] 9 bit
                         load_signed,  //[107]     1 bit   加载的数据是否要进行有符号扩展
-                        mem_size,    //[106:105] 2 bit   内存写入/读取的数据大小    
+                        mem_size,    //[106:105] 2 bit   内存写入/读取的数据大小
                         ex_gr_we     ,  //[104]     1 bit   写寄存器使能
                         dest         ,  //[103: 99] 5 bit   写寄存器地址
-                            
+
                         load_op      ,  //[ 98]     1 bit   load指令
                         res_from_mem ,  //[ 97]     1 bit   结果是否来自内存
 

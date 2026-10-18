@@ -18,7 +18,7 @@ module ID_stage(
     input  wire [`WS_TO_RF_BUS_WD -1 :0] ws_to_rf_bus,   //写回缓冲区
 
     //处理冲突
-    input wire  [`ES_TO_MS_BUS_WD -1 :0] es_to_ms_bus,   //来自es阶段的冲突信号
+    input wire  [`ES_TO_MS_BUS_WD -1 :0] es_to_ms_bus,   //来自es阶段的冲突信号 // 似乎没有用到，感觉可删
     input wire  [38 : 0] es_dest,   //load_op , gr_we , dest[5] , data[32]
     input wire  [38 : 0] ms_dest,
     input wire  es_to_ms_valid,

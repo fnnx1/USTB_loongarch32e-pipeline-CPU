@@ -6,20 +6,49 @@
  */
 `include "mycpu_defines.vh"
 
+/*
+    .inst_sram_req    (cpu_inst_req    ),
+    .inst_sram_wr     (cpu_inst_wr     ),
+    .inst_sram_size   (cpu_inst_size   ),
+    .inst_sram_wstrb  (cpu_inst_wstrb  ),
+    .inst_sram_addr   (cpu_inst_addr   ),
+    .inst_sram_wdata  (cpu_inst_wdata  ),
+    .inst_sram_addr_ok(cpu_inst_addr_ok),
+    .inst_sram_data_ok(cpu_inst_data_ok),
+    .inst_sram_rdata  (cpu_inst_rdata  ),
+
+    .data_sram_req    (cpu_data_req    ),
+    .data_sram_wr     (cpu_data_wr     ),
+    .data_sram_size   (cpu_data_size   ),
+    .data_sram_wstrb  (cpu_data_wstrb  ),
+    .data_sram_addr   (cpu_data_addr   ),
+    .data_sram_wdata  (cpu_data_wdata  ),
+    .data_sram_addr_ok(cpu_data_addr_ok),
+    .data_sram_data_ok(cpu_data_data_ok),
+    .data_sram_rdata  (cpu_data_rdata  ),
+*/
 module mycpu_top(
     input  wire        clk,
     input  wire        resetn,
     // inst sram interface
-    output wire [3:0]  inst_sram_we,    //指令内存对应字节访问使能
-    output wire        inst_sram_en,    // block Memory 使能
-    output wire [31:0] inst_sram_addr,  //访问地址
-    output wire [31:0] inst_sram_wdata, //写入数据
-    input  wire [31:0] inst_sram_rdata, //读数据
+    output wire        inst_sram_req,
+    output wire        inst_sram_wr,
+    output wire [1:0]  inst_sram_size,
+    output wire [3:0]  inst_sram_wstrb,
+    output wire [31:0] inst_sram_addr,
+    output wire [31:0] inst_sram_wdata,
+    input  wire        inst_sram_addr_ok,
+    input  wire        inst_sram_data_ok,
+    input  wire [31:0] inst_sram_rdata,
     // data sram interface
-    output wire [3:0]  data_sram_we,
-    output wire        data_sram_en,
+    output wire        data_sram_req,
+    output wire        data_sram_wr,
+    output wire [1:0]  data_sram_size,
+    output wire [3:0]  data_sram_wstrb,
     output wire [31:0] data_sram_addr,
     output wire [31:0] data_sram_wdata,
+    input  wire        data_sram_addr_ok,
+    input  wire        data_sram_data_ok,
     input  wire [31:0] data_sram_rdata,
     // trace debug interface
     output wire [31:0] debug_wb_pc,         //pc值
@@ -132,11 +161,15 @@ module mycpu_top(
         .fs_to_ds_valid(fs_to_ds_valid),
         .fs_to_ds_bus(fs_to_ds_bus),
         // inst sram interface
-        .inst_sram_en(inst_sram_en),
-        .inst_sram_we(inst_sram_we),
-        .inst_sram_addr(inst_sram_addr),
-        .inst_sram_wdata(inst_sram_wdata),
-        .inst_sram_rdata(inst_sram_rdata),
+        .inst_sram_req    (inst_sram_req),
+        .inst_sram_wr     (inst_sram_wr),
+        .inst_sram_size   (inst_sram_size   ),
+        .inst_sram_wstrb  (inst_sram_wstrb  ),
+        .inst_sram_addr   (inst_sram_addr   ),
+        .inst_sram_wdata  (inst_sram_wdata  ),
+        .inst_sram_addr_ok(inst_sram_addr_ok),
+        .inst_sram_data_ok(inst_sram_data_ok),
+        .inst_sram_rdata  (inst_sram_rdata  ),
         .ex_pc(ex_entry),
         .has_ex(has_ex),
         .int_flush(int_flush),

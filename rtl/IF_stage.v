@@ -8,10 +8,14 @@ module IF_stage(
     output wire fs_to_ds_valid,     //告知下个阶段数据是否有效
     output wire [`FS_TO_DS_BUS_WD-1 :0] fs_to_ds_bus,   //传递给下一级的缓冲区
     // inst sram interface
-    output wire inst_sram_en,
-    output wire [3:0] inst_sram_we,
+    output wire        inst_sram_req,
+    output wire        inst_sram_wr,
+    output wire [1:0]  inst_sram_size,
+    output wire [3:0]  inst_sram_wstrb,
     output wire [31:0] inst_sram_addr,
     output wire [31:0] inst_sram_wdata,
+    input  wire        inst_sram_addr_ok,
+    input  wire        inst_sram_data_ok,
     input  wire [31:0] inst_sram_rdata,
 
     input wire [31:0] ex_pc,
@@ -32,6 +36,9 @@ module IF_stage(
     wire        fs_allowin;
     wire        to_fs_valid;
 
+    wire pre_if_ready_go;
+
+
     wire [31:0] seq_pc; //顺序的地址
     wire [31:0] next_pc; //下一个执行的地址，可能会跳转
 
@@ -40,8 +47,14 @@ module IF_stage(
 
     wire [31:0] fs_inst; //fs阶段的inst和pc,往后传递
     reg [31:0] fs_pc;
+    // 用于完成取指时 ds 不允许进入的情况，暂存指令
+    reg [31:0] fs_inst_cache;
+    reg fs_inst_cache_valid; // 缓存中的数据是否应该被使用
+
+    reg drop_next_inst; // 丢弃下一条指令，用于发生异常时
 
     wire is_ADEF;
+
     assign if_ex = is_ADEF; //暂时没有异常处理
     assign if_ecode = is_ADEF ? `ECODE_ADE : 6'b0;
     assign if_esubcode = is_ADEF ? `ESUBCODE_ADEF : 9'b0;
@@ -55,8 +68,14 @@ module IF_stage(
                            fs_inst,      // [63:32]
                            fs_pc};       // [31:0]
 
-    //pre-if stage
-    assign to_fs_valid = ~reset;
+    // pre-if stage
+    // 当请求完成发送完成时，pre-if的pc(next pc)已经可以向下传递，
+    // 但 fs 会在确保数据已经读出时才允许同步接收，期间会阻塞pre-if更新与发送请求。
+    // 如果 sram 不出错，一次请求发送总是对应一次数据读取完成。
+    // 有个缺点，好像要好几拍才取指一次
+    assign pre_if_ready_go = inst_sram_req && inst_sram_addr_ok;
+    assign to_fs_valid = ~reset && pre_if_ready_go;
+
     assign seq_pc = fs_pc + 3'h4; //顺序
     assign next_pc = (has_ex || int_flush) ? ex_pc :
                     (ertn_flush) ? ertn_entry :
@@ -64,8 +83,24 @@ module IF_stage(
                     seq_pc;
 
     assign is_ADEF = next_pc[1:0] != 2'b0;
+
+    // 缓冲指令
+    always@(posedge clk)begin
+        if(reset)begin
+            fs_inst_cache <= 32'b0;
+            fs_inst_cache_valid <= 1'b0;
+        end else if (inst_sram_data_ok && !ds_allowin) begin
+            // 当 ds 不允许进入但有新数据读出，帮其暂存
+            fs_inst_cache <= inst_sram_rdata;
+            fs_inst_cache_valid <= 1'b1;
+        end else if (ds_allowin) begin
+            // 数据被取走，立即清空缓存可用性
+            fs_inst_cache_valid <= 1'b0;
+        end
+    end
+
     //IF stage
-    assign fs_ready_go = 1'b1; //可以传输
+    assign fs_ready_go = inst_sram_data_ok || fs_inst_cache_valid;// 指令已经读出或有有效缓冲
     assign fs_allowin = !fs_valid || fs_ready_go && ds_allowin; 
     //允许进入，需要了解下一级是否可以进入目的是可以实现保持停顿
     //br_taken 有效时, 本拍正要送往 ds 的那条指令属于跳转后的顺序路径(错误路径), 必须作废
@@ -86,14 +121,18 @@ module IF_stage(
             fs_pc <= 32'h1bfffffc;
         end else if(to_fs_valid && fs_allowin)begin
             fs_pc <= next_pc;
-        end 
+        end
     end
 
-    assign inst_sram_en = to_fs_valid && fs_allowin;
-    assign inst_sram_we = 4'h0;
+    // 当 fs_allowin == 1 时才发出请求
+    assign inst_sram_req = fs_allowin;
+
     assign inst_sram_addr = next_pc;
     assign inst_sram_wdata = 32'b0;
-
-    assign fs_inst = is_ADEF ? 32'b0 : inst_sram_rdata;
+    assign inst_sram_wstrb = 4'h0;
+    assign inst_sram_size = 2'b10;
+    assign fs_inst = is_ADEF ? 32'b0
+                    : fs_inst_cache_valid ? fs_inst_cache
+                    : inst_sram_rdata;
 
 endmodule
