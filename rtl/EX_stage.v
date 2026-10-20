@@ -12,11 +12,14 @@ module EX_stage(
     //to ms stage
     output wire        es_to_ms_valid,  //告知下一级数据是否有效
     output wire [`ES_TO_MS_BUS_WD -1 :0] es_to_ms_bus,  //下一级缓冲区
-    //to data sram
-    output wire        data_sram_en,    //数据内存使能
-    output wire [31:0] data_sram_addr,  //访问地址
-    output wire [31:0] data_sram_wdata, //写入数据
-    output wire [3:0]  data_sram_we,     //数据内存对应字节访问使能
+    // inst sram interface
+    output wire        data_sram_req,
+    output wire        data_sram_wr,
+    output wire [1:0]  data_sram_size,
+    output wire [3:0]  data_sram_wstrb,
+    output wire [31:0] data_sram_addr,
+    output wire [31:0] data_sram_wdata,
+    input  wire        data_sram_addr_ok,
 
     input wire         has_ex,  //无条件例外
     input wire         int_flush,
@@ -28,7 +31,7 @@ module EX_stage(
     input wire         ms_ertn,     //ms阶段的ertn信号
     input wire         ws_to_rf_valid,
     input wire         wb_ex,
-    input wire         wb_ertn 
+    input wire         wb_ertn
 );
     wire inst_rdcntvh_w;
     wire inst_rdcntvl_w;
@@ -79,6 +82,8 @@ module EX_stage(
     wire        res_from_mem;
     wire [31:0] sram_wdata;
     wire [3:0] sram_we;
+
+    wire mem_access
 
     wire [31:0] alu_src1;
     wire [31:0] alu_src2;
@@ -166,7 +171,6 @@ module EX_stage(
         .alu_result(alu_result)
     );
 
-    
     assign div_input_fire = dividend_valid && (div_signed ? dividend_ready_signed : dividend_ready_unsigned)
                         && divisor_valid  && (div_signed ? divisor_ready_signed : divisor_ready_unsigned);
     always @(posedge clk) begin
@@ -206,10 +210,15 @@ module EX_stage(
          .m_axis_dout_tdata       (div_result_unsigned),       // output
          .m_axis_dout_tvalid      (div_result_unsigned_valid)  // output
     );
-    // 当内存访问阶段或写回阶段发生异常且store使能时，发生冲突
-    assign exception_st_conflict = (ms_to_ws_valid && (ms_ex || ms_ertn) && data_sram_en) || (ws_to_rf_valid && (wb_ex || wb_ertn) && data_sram_en);
 
-    assign data_sram_en    = (mem_we | res_from_mem | load_op);
+
+    assign mem_access = (mem_we | res_from_mem | load_op);
+
+    // 当内存访问阶段或写回阶段发生异常且store使能时，发生冲突
+    assign exception_st_conflict = (ms_to_ws_valid && (ms_ex || ms_ertn) && mem_access) || (ws_to_rf_valid && (wb_ex || wb_ertn) && mem_access);
+
+    assign data_sram_req  = ms_allowin && mem_access && !exception_st_conflict;
+    assign data_sram_wr   = mem_we;
 
     assign sram_wdata = mem_size == `B ? {4{rkd_value[7:0]}} :
                         mem_size == `H ? {2{rkd_value[15:0]}} :

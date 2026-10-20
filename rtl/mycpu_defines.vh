@@ -2,7 +2,8 @@
 `define MYCPU_DEFINES_VH
 
     //总线位宽：前递 1+32=33
-    `define BR_BUS_WD       33
+    // 引入 br_stall +1 = 34
+    `define BR_BUS_WD       34
 
     //各级总线位宽：FS->DS 1+6+9+32+32=80
     `define FS_TO_DS_BUS_WD 80
