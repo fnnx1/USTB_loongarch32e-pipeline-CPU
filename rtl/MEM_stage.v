@@ -14,7 +14,8 @@ module MEM_stage(
     output wire [`MS_TO_WS_BUS_WD -1 :0] ms_to_ws_bus,  //写回缓冲区
     //内存访问端口
     input  wire [31:0] data_sram_rdata,  //访存数据
-    
+    input  wire        data_sram_data_ok,
+
     input  wire has_ex,
     input  wire int_flush,
     input  wire ertn_flush,
@@ -83,7 +84,7 @@ module MEM_stage(
             mem_size,
             gr_we,  //写寄存器使能
             dest,  //写寄存器地址
-            
+
             load_op,  //load指令
             res_from_mem,  //结果是否来自内存
 

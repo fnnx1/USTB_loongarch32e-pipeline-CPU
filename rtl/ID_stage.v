@@ -49,6 +49,7 @@ wire        ds_ex;
 wire [5:0] ds_excode;
 wire [8:0] ds_esubcode;
 
+wire br_stall; //跳转阻塞信号，id级存在即将跳转正在计算的指令
 wire br_taken;
 wire [31:0] br_target;
 
@@ -457,6 +458,16 @@ assign rkd_value = (es_match_rkd && !es_dest[38]) ? es_dest[31:0] :
 assign rj_eq_rd = (rj_value == rkd_value);
 assign rj_lt_rd = ($signed(rj_value) < $signed(rkd_value));
 assign rj_ltu_rd = ($unsigned(rj_value) < $unsigned(rkd_value));
+
+assign br_stall = load_data_hazard && (inst_beq
+                                    || inst_bne
+                                    || inst_blt
+                                    || inst_bge
+                                    || inst_bltu
+                                    || inst_bgeu
+                                    || inst_jirl
+                                    || inst_bl
+                                    || inst_b);
 assign br_taken = (  inst_beq  &&  rj_eq_rd
                   || inst_bne  && !rj_eq_rd
                   || inst_blt  &&  rj_lt_rd
@@ -470,7 +481,7 @@ assign br_taken = (  inst_beq  &&  rj_eq_rd
 assign br_target = (inst_beq || inst_bne || inst_blt || inst_bl || inst_b || inst_bge || inst_bltu || inst_bgeu) ? (ds_pc + br_offs) :
                                                    /*inst_jirl*/ (rj_value + jirl_offs);
 
-assign br_bus = {br_taken , br_target};
+assign br_bus = {br_stall, br_taken , br_target};
 
 assign {
         if_ex,
