@@ -83,7 +83,7 @@ module EX_stage(
     wire [31:0] sram_wdata;
     wire [3:0] sram_we;
 
-    wire mem_access
+    wire mem_access;
 
     wire [31:0] alu_src1;
     wire [31:0] alu_src2;
@@ -216,8 +216,9 @@ module EX_stage(
 
     // 当内存访问阶段或写回阶段发生异常且store使能时，发生冲突
     assign exception_st_conflict = (ms_to_ws_valid && (ms_ex || ms_ertn) && mem_access) || (ws_to_rf_valid && (wb_ex || wb_ertn) && mem_access);
-
+    // 下一级可以接收新数据时发送请求
     assign data_sram_req  = ms_allowin && mem_access && !exception_st_conflict;
+
     assign data_sram_wr   = mem_we;
 
     assign sram_wdata = mem_size == `B ? {4{rkd_value[7:0]}} :
@@ -235,12 +236,19 @@ module EX_stage(
 
     assign data_sram_addr  = alu_result;
     assign data_sram_wdata = sram_wdata;
-    assign data_sram_we    = (!is_ALE &&!exception_st_conflict && es_valid & mem_we) ? sram_we : 4'b0;
+    assign data_sram_wstrb = (!is_ALE &&!exception_st_conflict && es_valid & mem_we) ? sram_we : 4'b0;
 
-    assign mem_addr_offset = alu_result[1:0];   //内存地址的偏移量
+    assign mem_addr_offset = alu_result[1:0]; //内存地址的偏移量
 
     assign es_ready_go = ertn_flush || int_flush || has_ex ||
-                        !exception_st_conflict && ((!div_signed && !div_unsigned) || (div_signed && div_result_signed_valid) || (div_unsigned && div_result_unsigned_valid));
+                        !exception_st_conflict && (
+                            (!div_signed && !div_unsigned) && (
+                                mem_access ? data_sram_addr_ok : 1'b1
+                            )
+                            || (div_signed && div_result_signed_valid)
+                            || (div_unsigned && div_result_unsigned_valid)
+                        );
+
     assign div_mod_result = div_signed ? (inst_div_w ? div_result_signed[63:32] : (inst_mod_w ? div_result_signed[31:0] : alu_result)) 
                         : (div_unsigned ? (inst_div_wu ? div_result_unsigned[63:32] : (inst_mod_wu ? div_result_unsigned[31:0] : alu_result)) : alu_result);
 

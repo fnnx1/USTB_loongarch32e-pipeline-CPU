@@ -460,14 +460,14 @@ assign rj_lt_rd = ($signed(rj_value) < $signed(rkd_value));
 assign rj_ltu_rd = ($unsigned(rj_value) < $unsigned(rkd_value));
 
 assign br_stall = load_data_hazard && (inst_beq
-                                    || inst_bne
-                                    || inst_blt
-                                    || inst_bge
-                                    || inst_bltu
-                                    || inst_bgeu
-                                    || inst_jirl
-                                    || inst_bl
-                                    || inst_b);
+                                || inst_bne
+                                || inst_blt
+                                || inst_bge
+                                || inst_bltu
+                                || inst_bgeu
+                                || inst_jirl
+                                || inst_bl
+                                || inst_b);
 assign br_taken = (  inst_beq  &&  rj_eq_rd
                   || inst_bne  && !rj_eq_rd
                   || inst_blt  &&  rj_lt_rd

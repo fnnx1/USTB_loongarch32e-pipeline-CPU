@@ -223,11 +223,14 @@ module mycpu_top(
         //to ms stage
         .es_to_ms_valid(es_to_ms_valid),  //告知下一级数据是否有效
         .es_to_ms_bus(es_to_ms_bus),       //下一级缓冲区
-        // to data sram
-        .data_sram_en(data_sram_en),
+        // data sram request interface
+        .data_sram_req(data_sram_req),
+        .data_sram_wr(data_sram_wr),
+        .data_sram_size(data_sram_size),
+        .data_sram_wstrb(data_sram_wstrb),
         .data_sram_addr(data_sram_addr),
         .data_sram_wdata(data_sram_wdata),
-        .data_sram_we(data_sram_we),
+        .data_sram_addr_ok(data_sram_addr_ok),
         .int_flush(int_flush),
         .ertn_flush(ertn_flush),
         .ms_ex(ms_ex),
@@ -253,7 +256,9 @@ module mycpu_top(
         //to ws stage
         .ms_to_ws_valid(ms_to_ws_valid),  //告知下一级数据是否有效
         .ms_to_ws_bus(ms_to_ws_bus),   //写回缓冲区
+        // data sram response interface
         .data_sram_rdata(data_sram_rdata),
+        .data_sram_data_ok(data_sram_data_ok),
         .has_ex(has_ex),
         .int_flush(int_flush),
         .ertn_flush(ertn_flush),

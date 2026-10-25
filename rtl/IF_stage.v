@@ -87,7 +87,7 @@ module IF_stage(
 
     // 这里稍微修了一下，is_ADEF 通过组合逻辑决定fs_inst，而
     // fs_inst 和 fs_pc 应该是同级数据（之前这里是 next_pc)
-    assign is_ADEF = pc[1:0] != 2'b0;
+    assign is_ADEF = fs_pc[1:0] != 2'b0;
 
     // 异常处理
     always @(posedge clk) begin

@@ -56,9 +56,13 @@ module MEM_stage(
     assign mem_ex = es_ex;
     assign mem_excode = es_excode;
     assign mem_esubcode = es_esubcode;
-    assign ms_ready_go     = 1'b1;
+    // ex级某次访存请求发起时，本级 es_to_ms_bus_r 更新条件也满足，
+    // 因此这里用 es_to_ms_bus_r 的访存信息字段，刚好可以锁存至内存数据准备好，
+    // bus_r 的内容和内存数据同步被送到下一级。
+    assign ms_ready_go     = data_sram_data_ok || !(mem_we || load_op || res_from_mem);
     assign ms_allowin      = !mem_valid || ms_ready_go && ws_allowin || has_ex;
     assign ms_to_ws_valid  = mem_valid && ms_ready_go;
+
     always @(posedge clk) begin
         if (reset || has_ex || ertn_flush || int_flush) begin
             mem_valid <= 1'b0;
